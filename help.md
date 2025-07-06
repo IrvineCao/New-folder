@@ -1,18 +1,37 @@
-# ℹ️ Reminder
+# ℹ️ **Some Important Notes**
 
-- **Workspace ID**: Enter the **numeric Workspace ID**, and only one workspace can be entered at a time. This ID is the unique identifier for your workspace within the system. Please ensure that you enter the correct Workspace ID for the data you wish to access.
+- **Workspace ID**: Enter the **numeric Workspace ID**, which is the unique identifier for your workspace in the system. You can only enter **one workspace** at a time.  
+  - **Tip**: Ensure you input the correct Workspace ID to avoid data discrepancies. Double-check it!
 
-- **Storefront EID**: Enter one or more **Storefront IDs** (unique identifiers for storefronts), separated by commas. You can input multiple storefront IDs at once, but **all storefronts must belong to the same workspace** (the workspace ID entered above).  
-  - **Important Note**: When entering multiple Storefront IDs, ensure that all storefronts are within the same **workspace** to avoid errors in the data query.  
+- **Storefront EID**: Enter one or more **Storefront IDs** (unique identifiers for storefronts) separated by commas. Multiple storefronts are allowed, but **all storefronts must belong to the same workspace**.  
+  - **Important**: If you enter **multiple Storefront IDs**, make sure they belong to the **same workspace**. Mismatched storefronts across different workspaces will cause missing data.
   - If you enter **one Storefront ID**, the system will only export data for that specific storefront.
 
-- **Start Date** and **End Date**: Select the date range from **yesterday** to **30 days ago**.  
-  - **Start Date**: The beginning date of the period for which you wish to export data.  
-  - **End Date**: The end date of the period for which you wish to export data.  
-  - **Note**: Ensure that the **End Date** is not earlier than the **Start Date**, and the selected dates must fall within the range from yesterday to 30 days ago.
+- **Start Date** and **End Date**: Select the date range between **yesterday** and **30 days ago**.  
+  - **Start Date**: The starting date for the data export.  
+  - **End Date**: The ending date for the data export.  
+  - **Note**: The **End Date** should not be earlier than the **Start Date**, and the selected dates should fall within the last **30 days**.
 
-- **Large Datasets**: If you are exporting a large dataset (e.g., more than 20,000 rows), the export process may take some time. In this case, the system will prompt you to confirm before proceeding, so you are aware that it might take longer to load and export the data.  
-  - **Important**: If the number of rows exceeds **50,000**, consider reducing the number of storefronts selected to ensure the database remains stable during the export process. **Don't be lazy!**
+- **Large Datasets**: If you're exporting a large dataset (e.g., more than **20,000 rows**), the process might take some time. The system will prompt you to confirm before proceeding.  
+  - **Important**: If the dataset exceeds **50,000 rows**, it is recommended to **reduce the number of storefronts** selected, as large datasets can impact the system’s stability.  
+  - **Reminder**: Large datasets can cause delays in exporting or slow database performance. Be patient!
 
-- **Search Volume**: By default, the data will include only records where the search volume is **greater than 0**. This ensures that the export will not overload the database and will maintain data integrity.
-- **Downloading Data**: When you click the "Download" button, please **wait a moment** for the data to be downloaded. The file will automaticaly place in your folder and initially be in a **CRSWAP format**, and once the download is complete, it will automatically be converted into a **CSV format**.
+- **Search Volume**: By default, the data export will include only records where the search volume is **greater than 0**. This ensures optimal system performance and prevents overwhelming the database.  
+
+- **Downloading Data**: When you click the "Download" button, please **wait a moment** for the data to process. Once completed:
+  - The data will **automatically** download and place directly in your folder with a **CRSWAP format**.
+  - The file will **then** convert into a **CSV format** after download completion.
+
+---
+
+## Additional Information
+
+- **Data Integrity**: To maintain data integrity, avoid making changes to the exported file after download, especially when dealing with large or complex datasets.
+- **Performance Tip**: If you consistently export large datasets, consider splitting your exports into smaller time intervals or storefront groups to maintain smoother performance.
+- **Technical Support**: If you encounter issues during the export or with the data file, please speak directly to **[IrvineCao](https://epsilo.slack.com/archives/D075WP12FJ5)** for assistance.
+
+---
+
+## Contact
+
+- **IrvineCao**: [IrvineCao](https://epsilo.slack.com/archives/D075WP12FJ5)

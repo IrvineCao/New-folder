@@ -4,6 +4,11 @@ from logic import handle_export_process, load_data_and_display
 
 def create_input_form(source_key: str):
     """Creates a standardized input form and returns the values."""
+    # Define the date range for the selection
+    today = datetime.now().date()
+    thirty_days_ago = today - timedelta(days=30)
+    yesterday = today - timedelta(days=1)  # Always use yesterday for end_date
+
     with st.container():
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -15,42 +20,43 @@ def create_input_form(source_key: str):
         with col2:
             storefront_input = st.text_input(
                 "Storefront EID *", "",
-                help="Enter one or more storefront IDs, comma-separated",
+                help="Enter one or more storefront IDs, comma-separated (max 5)",
                 key=f"sf_id_{source_key}"
             )
         with col3:
             start_date = st.date_input(
                 "Start Date *",
-                value=datetime.now() - timedelta(days=30),
-                max_value=datetime.now().date() - timedelta(days=1),
+                value=thirty_days_ago,  # Default to 30 days ago
+                min_value=thirty_days_ago,  # Min value: 30 days ago
+                max_value=today,  # Max value: today
                 key=f"start_date_{source_key}"
             )
         with col4:
             end_date = st.date_input(
                 "End Date *",
-                value=datetime.now().date() - timedelta(days=1),
-                max_value=datetime.now().date() - timedelta(days=1),
+                value=yesterday,  # Always set to yesterday
+                min_value=thirty_days_ago,  # Min value: 30 days ago
+                max_value=yesterday,  # Max value: yesterday only
                 key=f"end_date_{source_key}"
             )
+    
     st.write("---")
     return workspace_id, storefront_input, start_date, end_date
 
 def display_main_ui():
     """Displays the main UI of the application."""
+    
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio('Go to', ['KWL', 'DSA'])
+    page = st.sidebar.radio('Go to', ['Keyword Lab', 'Digital Shelf Analytics', 'Please Read Im Begging You'])
 
-    if page == 'KWL':
+    if page == 'Keyword Lab':
         st.title("Keyword Level Data Export")
-        with st.expander("Help"):
-            st.write("Please fill in all required fields and click 'Get Data' to begin.")
-
         workspace_id, storefront_input, start_date, end_date = create_input_form('kwl')
 
         if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kwl'):
             handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kwl')
 
-    elif page == 'DSA':
+    elif page == 'Digital Shelf Analytics':
         tab1, tab2 = st.tabs(["Keyword Performance", "Product Tracking"])
 
         with tab1:
@@ -81,6 +87,11 @@ def display_main_ui():
 
     elif st.session_state.stage == 'loading':
         load_data_and_display(st.session_state.params.get('data_source'))
+
+    elif page == 'Please Read Im Begging You':
+        with open("help.md", "r", encoding="utf-8") as f:
+            about = f.read()
+        st.markdown(about) 
 
 def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source):
     """Handles the logic when 'Get Data' is clicked."""

@@ -188,5 +188,3 @@ def get_query(query_name, storefront_placeholders):
         str: Formatted SQL query
     """
     return query_params[query_name].format(storefront_placeholders=storefront_placeholders)
-
-
