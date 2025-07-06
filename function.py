@@ -1,17 +1,20 @@
 import streamlit as st
 from db_connection import get_connection
+# Import query functions with aliases
 from kwl_data import get_query as get_kwl_query
 from kw_pfm_data import get_query as get_dsa_query
+from product_tracking_data import get_query as get_pt_query
 import pandas as pd
 
 conn = get_connection()
 
+# Helper function to select the correct get_query function
 def get_query_by_source(data_source: str):
     """
     Returns the appropriate get_query function based on the data source.
     
     Args:
-        data_source (str): The source of the data ('kwl' or 'dsa').
+        data_source (str): The source of the data ('kwl', 'dsa', or 'pt').
         
     Returns:
         function: The get_query function for the specified source.
@@ -20,6 +23,8 @@ def get_query_by_source(data_source: str):
         return get_kwl_query
     elif data_source == 'dsa':
         return get_dsa_query
+    elif data_source == 'pt':
+        return get_pt_query
     else:
         raise ValueError(f"Unknown data source: {data_source}")
 
@@ -225,6 +230,8 @@ def get_data(_conn, workspace_id, storefront_id, start_date, end_date, query_typ
         params = (start_date, end_date) + tuple(storefront_id) + (workspace_id,) + tuple(storefront_id) + (workspace_id,)
     elif data_source == 'dsa':
         params = tuple(storefront_id) + (workspace_id,) + (start_date, end_date) + (start_date, end_date)
+    elif data_source == 'pt':
+        params = (start_date, end_date) + tuple(storefront_id) + (workspace_id,)
     else:
         # This case should not be reached if validation is done properly
         st.error("Invalid data source specified.")

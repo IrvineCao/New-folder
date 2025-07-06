@@ -1,55 +1,173 @@
-from function import handle_export_process
 from datetime import datetime, timedelta
 import streamlit as st
 
 query_params = {
     "count": """
-
+        WITH main_query AS (
+            SELECT
+                keyword.id as keyword____a_id,
+                product_a.device_type AS product____a_device_type,
+                product_a.display_type AS product____a_display_type,
+                product.id AS product____a_id,
+                workspace.id AS workspace____a_id
+            FROM passport_workspace AS workspace
+                INNER JOIN onsite_storefront AS storefront ON (true)
+                INNER JOIN onsite_product AS product ON (product.storefront_id = storefront.id)
+                INNER JOIN onsite_keyword_sharded AS keyword ON (true)
+                INNER JOIN onsite_keyword_workspace AS keyword_workspace ON (keyword_workspace.workspace_id = workspace.id)
+                AND (keyword_workspace.keyword_id = keyword.id)
+                INNER JOIN (
+                    SELECT
+                        product_a.timing as timing,
+                        product_a.keyword_id,
+                        product_a.product_id,
+                        MAX(product_a.display_type) AS display_type,
+                        MAX(product_a.device_type) AS device_type
+                    FROM onsite_keyword_sharded AS keyword
+                    INNER JOIN metric_share_of_search_product AS product_a ON (product_a.keyword_id = keyword.id)
+                    WHERE true
+                        AND product_a.timing = 'daily'
+                        AND (
+                            (
+                                created_datetime BETWEEN %s AND %s
+                            )
+                        )
+                    GROUP BY
+                        product_a.keyword_id,
+                        product_a.product_id,
+                        product_a.device_type,
+                        product_a.display_type
+                ) product_a 
+                ON (product_a.keyword_id = keyword.id)
+                AND (product_a.product_id = product.id)
+                AND product_a.timing = 'daily'
+            WHERE true
+                AND (
+                    storefront.ads_ops_storefront_id in ({storefront_placeholders})
+                    and workspace.id = %s
+                )
+            GROUP BY
+                keyword_workspace.id,
+                product.id,
+                product_a.device_type,
+                product_a.display_type,
+                keyword.id
+        )
+        select count(1)
+        from (SELECT 1
+        FROM main_query
+        GROUP BY keyword____a_id,product____a_id,product____a_device_type,product____a_display_type)
     """,
     "data": """
-    
+        WITH main_query AS (
+            SELECT
+                keyword.id AS keyword____a_id,
+                keyword.keyword_type AS keyword____a_keyword_type,
+                keyword.keyword AS keyword____a_keyword,
+                product_a.device_type AS product____a_device_type,
+                keyword.status AS keyword____a_status,
+                product_a.display_type AS product____a_display_type,
+                keyword.first_interaction_at AS keyword____a_first_interaction_at,
+                product.marketplace_name AS product____a_marketplace_name,
+                product.id AS product____a_id,
+                product.product_url AS product____a_product_url,
+                product.historical_sold AS product____a_historical_sold,
+                storefront.storefront_type AS storefront____a_storefront_type,
+                product.brand_name AS product____a_brand_name,
+                product.product_name AS product____a_product_name,
+                product.selling_price AS product____a_selling_price,
+                product.sold AS product____a_sold,
+                product.discount AS product____a_discount,
+                global_company_z.name AS storefront____global_company____a_name,
+                storefront.id AS storefront____a_id,
+                storefront.storefront_url AS storefront____a_storefront_url,
+                storefront.storefront_name AS storefront____a_storefront_name,
+                storefront.country_name AS storefront____a_country_name,
+                storefront.marketplace_name AS storefront____a_marketplace_name,
+                product_a.slot AS product____m_slot,
+                workspace.id AS workspace____a_id
+            FROM passport_workspace AS workspace
+                INNER JOIN onsite_storefront AS storefront ON (true)
+                LEFT JOIN global_company AS global_company_z ON storefront.global_company_id = global_company_z.id
+                INNER JOIN onsite_product AS product ON (product.storefront_id = storefront.id)
+                INNER JOIN onsite_keyword_sharded AS keyword ON (true)
+                INNER JOIN onsite_keyword_workspace AS keyword_workspace ON (keyword_workspace.workspace_id = workspace.id)
+                AND (keyword_workspace.keyword_id = keyword.id)
+                INNER JOIN (
+                    SELECT
+                        product_a.timing as timing,
+                        product_a.keyword_id,
+                        product_a.product_id,
+                        MAX(product_a.display_type) AS display_type,
+                        MAX(product_a.device_type) AS device_type,
+                        AVG(product_a.slot) AS slot
+                    FROM
+                        onsite_keyword_sharded AS keyword
+                        INNER JOIN metric_share_of_search_product AS product_a ON (product_a.keyword_id = keyword.id)
+                    WHERE
+                        true
+                        AND product_a.timing = 'daily'
+                        AND (
+                            (
+                                created_datetime BETWEEN %s AND %s
+                            )
+                        )
+                    GROUP BY
+                        NULL,
+                        product_a.keyword_id,
+                        product_a.product_id,
+                        product_a.device_type,
+                        product_a.display_type
+                ) product_a ON (product_a.keyword_id = keyword.id)
+                AND (product_a.product_id = product.id)
+                AND product_a.timing = 'daily'
+            WHERE
+                (true)
+                AND (
+                    storefront.ads_ops_storefront_id in ({storefront_placeholders})
+                    and workspace.id = %s
+                )
+            GROUP BY
+                keyword_workspace.id,
+                product.id,
+                product_a.device_type,
+                product_a.display_type,
+                keyword.id
+        )
+        SELECT
+            keyword____a_keyword as keyword,
+            product____a_product_name as product_name,
+            storefront____global_company____a_name as global_company,
+            storefront____a_storefront_name as storefront_name,
+            product____a_historical_sold as item_sold_LT,
+            product____a_sold as item_sold_l30d,
+            product____a_selling_price as selling_price,
+            round(AVG(product____m_slot),0) AS product_slot,
+            product____a_device_type as device_type,
+            product____a_display_type as display_type
+        FROM
+            main_query
+        GROUP BY
+            keyword____a_id,
+            product____a_id,
+            product____a_device_type,
+            product____a_display_type
+        LIMIT
+            10
     """
 }
 
-def get_query(query_name, storefront_placeholders, tag_placeholders):
+def get_query(query_name, storefront_placeholders):
     """
-    Get a query by name and format it with storefront and tag placeholders
+    Get a query by name and format it with storefront placeholders
     
     Args:
         query_name (str): Name of the query to retrieve ('count' or 'data')
         storefront_placeholders (str): Placeholder string for storefront IDs (e.g., '%s, %s')
-        tag_placeholders (str): Placeholder string for tags (e.g., '%s, %s')
         
     Returns:
         str: Formatted SQL query
     """
     return query_params[query_name].format(
-        storefront_placeholders=storefront_placeholders,
-        tag_placeholders=tag_placeholders
+        storefront_placeholders=storefront_placeholders
     )
-
-def product_tracking_page():
-    st.title("Product Tracking Data Export")
-
-    with st.container():
-        col6, col7, col8, col9, col10 = st.columns(5)
-        with col6:
-            workspace_id_pt = st.text_input("Workspace ID *", "", 
-                                            help="Enter the workspace ID (numeric)", key="workspace_id_pt")
-        with col7:
-            storefront_input_pt = st.text_input("Storefront EID *", "", 
-                                            help="Enter one or more storefront IDs, comma-separated", key="storefront_input_pt")
-        with col8:
-            tags_input_pt = st.text_input("Tags *", "", 
-                                            help="Enter one or more tags, comma-separated", key="tags_input_pt")
-        with col9:
-            start_date_pt = st.date_input("Start Date *", value=datetime.now() - timedelta(days=30), max_value=datetime.now().date() - timedelta(days=1), key="start_date_pt")
-        with col10:
-            end_date_pt = st.date_input("End Date *", value=datetime.now().date() - timedelta(days=1), max_value=datetime.now().date() - timedelta(days=1), key="end_date_pt")
-
-    st.write("---")
-
-    if st.button("Get Data", type="primary", use_container_width=True, key="get_data_pt"):
-        stage, params = handle_export_process('pi', workspace_id_pt, storefront_input_pt, start_date_pt, end_date_pt, tags_input_pt)
-        st.session_state.stage = stage
-        st.session_state.params = params
