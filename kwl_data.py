@@ -189,25 +189,4 @@ def get_query(query_name, storefront_placeholders):
     """
     return query_params[query_name].format(storefront_placeholders=storefront_placeholders)
 
-def kwl_page():
-    # Input section
-    with st.container():
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            workspace_id = st.text_input("Workspace ID *", "", 
-                                        help="Enter the workspace ID (numeric)")
-        with col2:
-            storefront_input = st.text_input("Storefront EID *", "", 
-                                        help="Enter one or more storefront IDs, comma-separated")
-        with col3:
-            start_date = st.date_input("Start Date *", 
-                                    value=datetime.now() - timedelta(days=30),  # Keep 30 days ago as default start
-                                    max_value=datetime.now().date() - timedelta(days=1))  # Can't select future dates
-        with col4:
-            end_date = st.date_input("End Date *", 
-                                    value=datetime.now().date() - timedelta(days=1),  # Set to yesterday
-                                    max_value=datetime.now().date() - timedelta(days=1))  # Can't select today or future
 
-    # Add some spacing
-    st.write("---")
-    return workspace_id, storefront_input, start_date, end_date
