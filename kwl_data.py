@@ -1,7 +1,3 @@
-from datetime import datetime, timedelta
-import streamlit as st
-
-
 query_params = {
     "count": """
         WITH main_query AS (
