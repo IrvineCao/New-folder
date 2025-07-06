@@ -23,8 +23,9 @@ if page == 'KWL':
     workspace_id, storefront_input, start_date, end_date = kwl_page()
     
     # --- CẬP NHẬT TRẠNG THÁI KHI NHẤN NÚT ---
-    if st.button("Get Data", type="primary", use_container_width=True):
-        stage, params = handle_export_process('kwl', workspace_id=workspace_id, storefront_input=storefront_input, start_date=start_date, end_date=end_date)
+    if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kwl'):
+        # Pass 'kwl' as the data_source
+        stage, params = handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source='kwl')
         st.session_state.stage = stage
         st.session_state.params = params
 
@@ -46,18 +47,20 @@ if page == 'KWL':
                 st.rerun()
 
     if st.session_state.stage == 'loading':
-        load_data_and_display()
+        # Pass the correct data_source to the display function
+        load_data_and_display('kwl')
 
 if page == 'DSA':
     tab_1, tab_2 = st.tabs(["Keyword PFM","Product Tracking"])
     
     with tab_1:
         st.title("Keyword PFM Data Export")
-        workspace_id, storefront_input, start_date, end_date, tag_input = kw_pfm_page()
+        workspace_id, storefront_input, start_date, end_date = kw_pfm_page()
         
         # --- CẬP NHẬT TRẠNG THÁI KHI NHẤN NÚT ---
-        if st.button("Get Data", type="primary", use_container_width=True):
-            stage, params = handle_export_process('kw_pfm', workspace_id=workspace_id, storefront_input=storefront_input, start_date=start_date, end_date=end_date, tag_input=tag_input)
+        if st.button("Get Data", type="primary", use_container_width=True, key='get_data_dsa'):
+            # Pass 'dsa' as the data_source
+            stage, params = handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source='dsa')
             st.session_state.stage = stage
             st.session_state.params = params
 
@@ -79,7 +82,8 @@ if page == 'DSA':
                     st.rerun()
 
         if st.session_state.stage == 'loading':
-            load_data_and_display()
+            # Pass the correct data_source to the display function
+            load_data_and_display('dsa')
 
 
     with tab_2:

@@ -29,7 +29,6 @@ query_params = {
                 WHERE
                     sf.ads_ops_storefront_id IN ({storefront_placeholders})
                     AND ws.id = %s
-                    AND ws_tag.name IN ({tag_placeholders})
             ),
             sos_metrics AS (
                 SELECT
@@ -165,7 +164,6 @@ query_params = {
                 WHERE
                     sf.ads_ops_storefront_id IN ({storefront_placeholders})
                     AND ws.id = %s
-                    AND ws_tag.name IN ({tag_placeholders})
             ),
             sos_metrics AS (
                 SELECT
@@ -302,27 +300,25 @@ query_params = {
     """
 }
 
-def get_query(query_name, storefront_placeholders, tag_placeholders):
+def get_query(query_name, storefront_placeholders):
     """
     Get a query by name and format it with storefront and tag placeholders
     
     Args:
         query_name (str): Name of the query to retrieve ('count' or 'data')
         storefront_placeholders (str): Placeholder string for storefront IDs (e.g., '%s, %s')
-        tag_placeholders (str): Placeholder string for tags (e.g., '%s, %s')
         
     Returns:
         str: Formatted SQL query
     """
     return query_params[query_name].format(
-        storefront_placeholders=storefront_placeholders,
-        tag_placeholders=tag_placeholders
+        storefront_placeholders=storefront_placeholders
     )
 
 def kw_pfm_page():
     # Input section
     with st.container():
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             workspace_id = st.text_input("Workspace ID *", "", 
                                         help="Enter the workspace ID (numeric)")
@@ -337,11 +333,8 @@ def kw_pfm_page():
             end_date = st.date_input("End Date *", 
                                     value=datetime.now().date() - timedelta(days=1),  # Set to yesterday
                                     max_value=datetime.now().date() - timedelta(days=1))  # Can't select today or future
-        with col5:
-            tag_input = st.text_input("Tags *", "", 
-                                    help="Enter one or more tags, comma-separated")
     # Add some spacing
     st.write("---")
-    return workspace_id, storefront_input, start_date, end_date, tag_input
+    return workspace_id, storefront_input, start_date, end_date
 
 

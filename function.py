@@ -1,15 +1,32 @@
 import streamlit as st
 from db_connection import get_connection
-from kwl_data import get_query
+from kwl_data import get_query as get_kwl_query
+from kw_pfm_data import get_query as get_dsa_query
 import pandas as pd
 
 conn = get_connection()
 
+def get_query_by_source(data_source: str):
+    """
+    Returns the appropriate get_query function based on the data source.
+    
+    Args:
+        data_source (str): The source of the data ('kwl' or 'dsa').
+        
+    Returns:
+        function: The get_query function for the specified source.
+    """
+    if data_source == 'kwl':
+        return get_kwl_query
+    elif data_source == 'dsa':
+        return get_dsa_query
+    else:
+        raise ValueError(f"Unknown data source: {data_source}")
 
 #--------------------------------------------------#
 #------------ function dung chung -----------------#
 #--------------------------------------------------#
-def validate_inputs(workspace_id, storefront_id, start_date, end_date, tag_input):
+def validate_inputs(workspace_id, storefront_id, start_date, end_date):
     """Validate all input parameters for the export process.
     
     Args:
@@ -29,8 +46,6 @@ def validate_inputs(workspace_id, storefront_id, start_date, end_date, tag_input
         errors.append("Storefront EID must be a number or comma-separated numbers")
     if end_date < start_date:
         errors.append("End date cannot be before start date")
-    if not tag_input.replace(',', '').replace(' ', ''):
-        errors.append("Tags must be a text or comma-separated text")
     
     return errors
 
@@ -48,7 +63,7 @@ def process_storefront_input(storefront_input):
     except (ValueError, AttributeError):
         return None
 
-def load_data_and_display():
+def load_data_and_display(data_source: str):
     """Load and display keyword data based on the current session state parameters.
     
     This function retrieves data using the parameters stored in the session state,
@@ -71,7 +86,7 @@ def load_data_and_display():
             # Create a new connection for this query
             with get_connection() as conn:
                 df = get_data(conn, params["workspace_id"], params["storefront_ids"], 
-                           params["start_date_str"], params["end_date_str"],"data")
+                           params["start_date_str"], params["end_date_str"], "data", params["data_source"])
             
             if df.empty:
                 st.warning("No data returned from the query")
@@ -92,7 +107,7 @@ def load_data_and_display():
 #--------------------------------------------------#
 #------------- handle export process --------------#
 #--------------------------------------------------#
-def handle_export_process_kwl(workspace_id, storefront_input, start_date, end_date):
+def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str):
     """Handle the export process with validation and data size checking.
     
     This function orchestrates the export process by:
@@ -106,6 +121,7 @@ def handle_export_process_kwl(workspace_id, storefront_input, start_date, end_da
         storefront_input (str): Comma-separated string of storefront IDs
         start_date (datetime.date): Start date for the export
         end_date (datetime.date): End date for the export
+        data_source (str): The source of the data ('kwl' or 'dsa')
         
     Returns:
         tuple: A tuple containing:
@@ -133,7 +149,8 @@ def handle_export_process_kwl(workspace_id, storefront_input, start_date, end_da
         "workspace_id": int(workspace_id),
         "storefront_ids": storefront_ids,
         "start_date_str": start_date.strftime('%Y-%m-%d'),
-        "end_date_str": end_date.strftime('%Y-%m-%d')
+        "end_date_str": end_date.strftime('%Y-%m-%d'),
+        "data_source": data_source # Save data_source to session state
     }
     
     try:
@@ -145,87 +162,8 @@ def handle_export_process_kwl(workspace_id, storefront_input, start_date, end_da
                 st.session_state.params["storefront_ids"], 
                 st.session_state.params["start_date_str"], 
                 st.session_state.params["end_date_str"],
-                "count"
-            )
-            num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
-            st.session_state.params['num_row'] = num_row
-
-        # Determine the next stage based on the number of rows
-        if num_row == 0:
-            st.warning("No data found for the selected criteria")
-            st.session_state.stage = 'initial'  # Reset state
-        elif 10000 < num_row < 50000:
-            # Large dataset -> switch to waiting for confirmation
-            st.session_state.stage = 'waiting_confirmation'
-        elif num_row >= 50000:
-            # Very large dataset -> show error and stop
-            st.error(f"Large dataset: {num_row:,} rows found. Please reduce the number of storefronts selected.")
-            st.stop()
-        else:
-            # Small dataset -> proceed directly to loading
-            st.session_state.stage = 'loading'
-
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        st.session_state.stage = 'initial'  # Reset state on error
-    
-    return st.session_state.stage, st.session_state.params
-
-
-def handle_export_process_kw_pfm(workspace_id, storefront_input, start_date, end_date):
-    """Handle the export process with validation and data size checking.
-    
-    This function orchestrates the export process by:
-    1. Validating input parameters
-    2. Processing storefront IDs
-    3. Saving parameters to session state
-    4. Checking data size and determining the next stage
-    
-    Args:
-        workspace_id (str): The workspace ID for the export
-        storefront_input (str): Comma-separated string of storefront IDs
-        start_date (datetime.date): Start date for the export
-        end_date (datetime.date): End date for the export
-        
-    Returns:
-        tuple: A tuple containing:
-            - str: The current stage ('initial', 'waiting_confirmation', 'loading', or 'error')
-            - dict: The parameters used for the export
-            
-    Note:
-        This function updates the session state with the current parameters
-        and the number of rows in the dataset.
-    """
-    errors = validate_inputs(workspace_id, storefront_input, start_date, end_date)
-        
-    if errors:
-        for error in errors:
-            st.error(error)
-        st.stop()
-            
-    storefront_ids = process_storefront_input(storefront_input)
-    if not storefront_ids:
-        st.error("Invalid Storefront EID format")
-        st.stop()
-    
-    # Save parameters to session state for reuse in subsequent runs
-    st.session_state.params = {
-        "workspace_id": int(workspace_id),
-        "storefront_ids": storefront_ids,
-        "start_date_str": start_date.strftime('%Y-%m-%d'),
-        "end_date_str": end_date.strftime('%Y-%m-%d')
-    }
-    
-    try:
-        with st.spinner("Checking data size..."), get_connection() as conn:
-            # Get the number of rows in the result set
-            num_row_df = get_data(
-                conn, 
-                st.session_state.params["workspace_id"], 
-                st.session_state.params["storefront_ids"], 
-                st.session_state.params["start_date_str"], 
-                st.session_state.params["end_date_str"],
-                "count"
+                "count",
+                st.session_state.params["data_source"]
             )
             num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
             st.session_state.params['num_row'] = num_row
@@ -257,7 +195,7 @@ def handle_export_process_kw_pfm(workspace_id, storefront_input, start_date, end
 #------------------- get data ---------------------#
 #--------------------------------------------------#
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
-def get_data(_conn, workspace_id, storefront_id, start_date, end_date, query_type: str):
+def get_data(_conn, workspace_id, storefront_id, start_date, end_date, query_type: str, data_source: str):
     """
     Get data based on the specified query type.
     
@@ -268,6 +206,7 @@ def get_data(_conn, workspace_id, storefront_id, start_date, end_date, query_typ
         start_date: Start date for the query
         end_date: End date for the query
         query_type: Type of query to execute ('count' or 'data')
+        data_source (str): The source of the data ('kwl' or 'dsa')
         
     Returns:
         DataFrame: A DataFrame containing the query results.
@@ -276,11 +215,21 @@ def get_data(_conn, workspace_id, storefront_id, start_date, end_date, query_typ
         storefront_id = (storefront_id,)
     
     storefront_placeholders = ', '.join(['%s'] * len(storefront_id))
-    query = get_query(query_type, storefront_placeholders)
     
-    # Parameters for the new queries
-    params = (start_date, end_date) + tuple(storefront_id) + (workspace_id,) + tuple(storefront_id) + (workspace_id,)
+    # Dynamically select the get_query function
+    get_query_func = get_query_by_source(data_source)
+    query = get_query_func(query_type, storefront_placeholders)
     
+    # Parameters for the queries must match the source
+    if data_source == 'kwl':
+        params = (start_date, end_date) + tuple(storefront_id) + (workspace_id,) + tuple(storefront_id) + (workspace_id,)
+    elif data_source == 'dsa':
+        params = tuple(storefront_id) + (workspace_id,) + (start_date, end_date) + (start_date, end_date)
+    else:
+        # This case should not be reached if validation is done properly
+        st.error("Invalid data source specified.")
+        return pd.DataFrame()
+
     with _conn.cursor() as cur:
         cur.execute(query, params)
         rows = cur.fetchall()
