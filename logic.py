@@ -24,18 +24,18 @@ def validate_inputs(workspace_id, storefront_input, start_date, end_date):
     errors = []
     if not workspace_id:
         errors.append("Workspace ID is required")
-    elif len(workspace_id) > 2:
+    elif len([s.strip() for s in workspace_id.split(",") if s.strip()]) > 1:
         errors.append("You can only enter one workspace ID.")
-    elif not workspace_id.isdigit():
+    elif not all(s.strip().isdigit() for s in workspace_id.split(",") if s.strip()):
         errors.append("Workspace ID must be numeric.")
-    
+
     if not storefront_input:
         errors.append("Storefront EID is required")
-    elif len(storefront_input) > 5:
+    elif len([s.strip() for s in storefront_input.split(",") if s.strip()]) > 5:
         errors.append("You can only enter up to 5 storefront IDs.")
-    elif not storefront_input.isdigit():
+    elif not all(s.strip().isdigit() for s in storefront_input.split(",") if s.strip()):
         errors.append("Storefront EID must be numeric.")
-    
+
     if start_date > end_date:
         errors.append("Start date cannot be after end date.")
     return errors
