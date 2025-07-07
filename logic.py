@@ -77,6 +77,7 @@ def get_data(workspace_id, storefront_id, start_date, end_date, query_type: str,
         # Use text() to enable named parameters and safely pass them to the database.
         return pd.read_sql(text(query), db.connection(), params=params)
 
+
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str):
     """Handle the export process with validation and data size checking."""
     errors = validate_inputs(workspace_id, storefront_input, start_date, end_date)
@@ -128,6 +129,7 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
     
     return st.session_state.stage, st.session_state.params
 
+
 def load_and_store_data(data_source: str):
     """Load data and store it in the session state."""
     try:
@@ -146,6 +148,7 @@ def load_and_store_data(data_source: str):
     except Exception as e:
         st.error(f"An error occurred during data load: {str(e)}")
         st.session_state.stage = 'initial'
+
 
 def convert_df_to_csv(df: pd.DataFrame):
     """Convert a DataFrame to a CSV string for downloading."""
