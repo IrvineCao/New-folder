@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from contextlib import contextmanager
+from sqlalchemy.pool import QueuePool
 
 # Function to load database configuration from config.json
 def load_config():
@@ -21,7 +22,14 @@ SQLALCHEMY_DATABASE_URL = (
 )
 
 # Create the SQLAlchemy engine
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    poolclass=QueuePool,
+    pool_size=10,        # max 10 kết nối trong pool
+    max_overflow=5,      # thêm 5 khi cần
+    pool_timeout=30,     # chờ tối đa 30 giây để lấy connection
+    pool_recycle=1800    # recycle connection mỗi 30 phút (tránh timeout)
+)
 
 # Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -28,7 +28,7 @@ def create_input_form(source_key: str):
                 "Start Date *",
                 value=thirty_days_ago,  # Default to 30 days ago
                 min_value=thirty_days_ago,  # Min value: 30 days ago
-                max_value=today,  # Max value: today
+                max_value=yesterday,  # Max value: yesterday
                 key=f"start_date_{source_key}"
             )
         with col4:
@@ -51,6 +51,7 @@ def display_main_ui():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio('Go to', ['Keyword Lab', 'Digital Shelf Analytics', 'Please Read Im Begging You'])
 
+    # Keyword Lab Page
     if page == 'Keyword Lab':
         st.title("Keyword Level Data Export")
         workspace_id, storefront_input, start_date, end_date = create_input_form('kwl')
@@ -58,20 +59,29 @@ def display_main_ui():
         if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kwl'):
             handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kwl')
 
+    # Digital Shelf Analytics Page
     elif page == 'Digital Shelf Analytics':
         tab1, tab2 = st.tabs(["Keyword Performance", "Product Tracking"])
 
+        # Keyword Performance Tab
         with tab1:
             st.title("Keyword Performance Data Export")
             workspace_id, storefront_input, start_date, end_date = create_input_form('kw_pfm')
             if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kw_pfm'):
                 handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kw_pfm')
 
+        # Product Tracking Tab
         with tab2:
             st.title("Product Tracking Data Export")
             workspace_id, storefront_input, start_date, end_date = create_input_form('pt')
             if st.button("Get Data", type="primary", use_container_width=True, key='get_data_pt'):
                 handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'pt')
+
+    # Note Page
+    elif page == 'Please Read Im Begging You':
+        with open("help.md", "r", encoding="utf-8") as f:
+            about = f.read()
+        st.markdown(about) 
 
     # Centralized State Handling for Data Display
     if st.session_state.stage == 'waiting_confirmation':
@@ -118,11 +128,6 @@ def display_main_ui():
 
             st.subheader("Data Preview (First 500 Rows)")
             st.data_editor(df.head(500), use_container_width=True, height=300)
-
-    elif page == 'Please Read Im Begging You':
-        with open("help.md", "r", encoding="utf-8") as f:
-            about = f.read()
-        st.markdown(about) 
 
 
 
