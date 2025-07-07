@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+from io import StringIO
 from kwl_data import get_query as get_kwl_query
-from kw_pfm_data import get_query as get_dsa_query
+from kw_pfm_data import get_query as get_kw_pfm_query
 from product_tracking_data import get_query as get_pt_query
 from sqlalchemy import text
 from database import get_connection
@@ -13,8 +14,8 @@ def get_query_by_source(data_source: str):
     """
     if data_source == 'kwl':
         return get_kwl_query
-    elif data_source == 'dsa':
-        return get_dsa_query
+    elif data_source == 'kw_pfm':
+        return get_kw_pfm_query
     elif data_source == 'pt':
         return get_pt_query
     else:
@@ -127,8 +128,8 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
     
     return st.session_state.stage, st.session_state.params
 
-def load_data_and_display(data_source: str):
-    """Load and display keyword data based on the current session state parameters."""
+def load_and_store_data(data_source: str):
+    """Load data and store it in the session state."""
     try:
         with st.spinner("Loading data..."):
             params = st.session_state.params
@@ -137,13 +138,17 @@ def load_data_and_display(data_source: str):
             
             if df.empty:
                 st.warning("No data returned from the query")
+                st.session_state.stage = 'initial' # Reset stage if no data
             else:
-                st.success(f"✅ Successfully loaded {len(df)} rows")
-                st.subheader("Data Preview")
-                st.dataframe(df, use_container_width=True)
-                
-                st.session_state.stage = 'initial'
+                st.session_state.df = df # Store full dataframe in session state
+                st.session_state.stage = 'loaded' # Set stage to loaded
 
     except Exception as e:
         st.error(f"An error occurred during data load: {str(e)}")
         st.session_state.stage = 'initial'
+
+def convert_df_to_csv(df: pd.DataFrame):
+    """Convert a DataFrame to a CSV string for downloading."""
+    output = StringIO()
+    df.to_csv(output, index=False, encoding='utf-8')
+    return output.getvalue()

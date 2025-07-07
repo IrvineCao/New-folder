@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import datetime, timedelta
-from logic import handle_export_process, load_data_and_display
+from logic import handle_export_process, load_and_store_data, convert_df_to_csv
 
 def create_input_form(source_key: str):
     """Creates a standardized input form and returns the values."""
@@ -43,6 +43,8 @@ def create_input_form(source_key: str):
     st.write("---")
     return workspace_id, storefront_input, start_date, end_date
 
+
+
 def display_main_ui():
     """Displays the main UI of the application."""
     
@@ -61,9 +63,9 @@ def display_main_ui():
 
         with tab1:
             st.title("Keyword Performance Data Export")
-            workspace_id, storefront_input, start_date, end_date = create_input_form('dsa')
-            if st.button("Get Data", type="primary", use_container_width=True, key='get_data_dsa'):
-                handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'dsa')
+            workspace_id, storefront_input, start_date, end_date = create_input_form('kw_pfm')
+            if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kw_pfm'):
+                handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kw_pfm')
 
         with tab2:
             st.title("Product Tracking Data Export")
@@ -86,12 +88,43 @@ def display_main_ui():
                     st.error("Please check the box to proceed.")
 
     elif st.session_state.stage == 'loading':
-        load_data_and_display(st.session_state.params.get('data_source'))
+        load_and_store_data(st.session_state.params.get('data_source'))
+        st.rerun() # Rerun to reflect the new 'loaded' state
+
+    elif st.session_state.stage == 'loaded':
+        # Check if the current page corresponds to the loaded data
+        data_source = st.session_state.params.get('data_source')
+        page_matches_data = (
+            (page == 'Keyword Lab' and data_source == 'kwl') or
+            (page == 'Digital Shelf Analytics' and data_source in ['kw_pfm', 'pt'])
+        )
+
+        if page_matches_data:
+            df = st.session_state.df
+            st.success(f"✅ Successfully loaded {len(df):,} rows")
+
+            # Prepare data for download
+            csv_data = convert_df_to_csv(df)
+            file_name = f"{st.session_state.params.get('data_source', 'export')}_data_{datetime.now().strftime('%Y%m%d')}.csv"
+
+            st.download_button(
+               label="Export Full Data as CSV",
+               data=csv_data,
+               file_name=file_name,
+               mime='text/csv',
+               use_container_width=True,
+               type="primary"
+            )
+
+            st.subheader("Data Preview (First 500 Rows)")
+            st.data_editor(df.head(500), use_container_width=True, height=300)
 
     elif page == 'Please Read Im Begging You':
         with open("help.md", "r", encoding="utf-8") as f:
             about = f.read()
         st.markdown(about) 
+
+
 
 def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source):
     """Handles the logic when 'Get Data' is clicked."""

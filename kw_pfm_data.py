@@ -267,7 +267,3 @@ def get_query(query_name):
         str: SQL query
     """
     return query_params[query_name]
-
-
-
-
