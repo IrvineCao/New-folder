@@ -8,4 +8,4 @@ if 'params' not in st.session_state:
     st.session_state.params = {}
 
 # --- Run the main application ---
-display_main_ui()
+display_main_ui() 

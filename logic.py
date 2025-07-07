@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
-from db_connection import get_connection
 from kwl_data import get_query as get_kwl_query
 from kw_pfm_data import get_query as get_dsa_query
 from product_tracking_data import get_query as get_pt_query
+from sqlalchemy import text
+from database import get_connection
 
 # Helper function to select the correct get_query function
 def get_query_by_source(data_source: str):
@@ -19,26 +20,30 @@ def get_query_by_source(data_source: str):
     else:
         raise ValueError(f"Unknown data source: {data_source}")
 
+
 def validate_inputs(workspace_id, storefront_input, start_date, end_date):
     """Validates the user inputs from the Streamlit UI."""
     errors = []
+    workspace_id = [s.strip().isdigit() for s in workspace_id.split(",") if s.strip()]
     if not workspace_id:
         errors.append("Workspace ID is required")
-    elif len([s.strip() for s in workspace_id.split(",") if s.strip()]) > 1:
+    elif len(workspace_id) > 1:
         errors.append("You can only enter one workspace ID.")
-    elif not all(s.strip().isdigit() for s in workspace_id.split(",") if s.strip()):
+    elif not all(workspace_id):
         errors.append("Workspace ID must be numeric.")
 
+    storefront_input = [s.strip().isdigit() for s in storefront_input.split(",") if s.strip()]
     if not storefront_input:
         errors.append("Storefront EID is required")
-    elif len([s.strip() for s in storefront_input.split(",") if s.strip()]) > 5:
+    elif len(storefront_input) > 5:
         errors.append("You can only enter up to 5 storefront IDs.")
-    elif not all(s.strip().isdigit() for s in storefront_input.split(",") if s.strip()):
+    elif not all(storefront_input):
         errors.append("Storefront EID must be numeric.")
 
     if start_date > end_date:
         errors.append("Start date cannot be after end date.")
     return errors
+
 
 def process_storefront_input(storefront_input):
     """Processes the comma-separated storefront IDs into a list of integers."""
@@ -47,34 +52,29 @@ def process_storefront_input(storefront_input):
     except ValueError:
         return None
 
+
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
-def get_data(_conn, workspace_id, storefront_id, start_date, end_date, query_type: str, data_source: str):
+def get_data(workspace_id, storefront_id, start_date, end_date, query_type: str, data_source: str):
     """
-    Get data based on the specified query type.
+    Get data based on the specified query type using SQLAlchemy session.
     """
     if not isinstance(storefront_id, (list, tuple)):
-        storefront_id = (storefront_id,)
-    
-    storefront_placeholders = ', '.join(['%s'] * len(storefront_id))
+        storefront_id = tuple(storefront_id,)
     
     get_query_func = get_query_by_source(data_source)
-    query = get_query_func(query_type, storefront_placeholders)
+    query = get_query_func(query_type)
     
-    if data_source == 'kwl':
-        params = (start_date, end_date) + tuple(storefront_id) + (workspace_id,) + tuple(storefront_id) + (workspace_id,)
-    elif data_source == 'dsa':
-        params = tuple(storefront_id) + (workspace_id,) + (start_date, end_date) + (start_date, end_date)
-    elif data_source == 'pt':
-        params = (start_date, end_date) + tuple(storefront_id) + (workspace_id,)
-    else:
-        st.error("Invalid data source specified.")
-        return pd.DataFrame()
+    # Parameters are now a dictionary to match the named placeholders in the SQL query.
+    params = {
+        "start_date": start_date,
+        "end_date": end_date,
+        "workspace_id": workspace_id,
+        "storefront_ids": storefront_id  # Pass as a tuple for the IN clause
+    }
 
-    with _conn.cursor() as cur:
-        cur.execute(query, params)
-        rows = cur.fetchall()
-        columns = [desc[0] for desc in cur.description]
-        return pd.DataFrame(rows, columns=columns)
+    with get_connection() as db:
+        # Use text() to enable named parameters and safely pass them to the database.
+        return pd.read_sql(text(query), db.connection(), params=params)
 
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str):
     """Handle the export process with validation and data size checking."""
@@ -98,9 +98,8 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
     }
     
     try:
-        with st.spinner("Checking data size..."), get_connection() as conn:
+        with st.spinner("Checking data size..."):
             num_row_df = get_data(
-                conn, 
                 st.session_state.params["workspace_id"], 
                 st.session_state.params["storefront_ids"], 
                 st.session_state.params["start_date_str"], 
@@ -133,9 +132,8 @@ def load_data_and_display(data_source: str):
     try:
         with st.spinner("Loading data..."):
             params = st.session_state.params
-            with get_connection() as conn:
-                df = get_data(conn, params["workspace_id"], params["storefront_ids"], 
-                           params["start_date_str"], params["end_date_str"], "data", params["data_source"])
+            df = get_data(params["workspace_id"], params["storefront_ids"], 
+                       params["start_date_str"], params["end_date_str"], "data", params["data_source"])
             
             if df.empty:
                 st.warning("No data returned from the query")

@@ -23,8 +23,8 @@ query_params = {
                     JOIN onsite_keyword_workspace_tag kw_ws_tag ON kw_ws_tag.keyword_workspace_id = kw_ws.id
                     LEFT JOIN onsite_workspace_tag ws_tag ON ws_tag.id = kw_ws_tag.workspace_tag_id
                 WHERE
-                    sf.ads_ops_storefront_id IN ({storefront_placeholders})
-                    AND ws.id = %s
+                    sf.ads_ops_storefront_id IN :storefront_ids
+                    AND ws.id = :workspace_id
             ),
             sos_metrics AS (
                 SELECT
@@ -43,7 +43,7 @@ query_params = {
                     AND s.display_type = 'Paid'
                     AND s.product_position = '10'
                     AND s.timing = 'daily'
-                    AND DATE(created_datetime) BETWEEN %s AND %s
+                    AND DATE(created_datetime) BETWEEN :start_date AND :end_date
                 GROUP BY
                     s.keyword_id,
                     s.storefront_id,
@@ -69,7 +69,7 @@ query_params = {
                     AND p.ads_ops_storefront_id = dim.aos_id
                 WHERE
                     p.timing = 'daily'
-                    AND DATE(created_datetime) BETWEEN %s AND %s
+                    AND DATE(created_datetime) BETWEEN :start_date AND :end_date
                 GROUP BY
                     p.ads_ops_storefront_id,
                     p.keyword_id,
@@ -118,8 +118,8 @@ query_params = {
                     JOIN onsite_keyword_workspace_tag kw_ws_tag ON kw_ws_tag.keyword_workspace_id = kw_ws.id
                     LEFT JOIN onsite_workspace_tag ws_tag ON ws_tag.id = kw_ws_tag.workspace_tag_id
                 WHERE
-                    sf.ads_ops_storefront_id IN ({storefront_placeholders})
-                    AND ws.id = %s
+                    sf.ads_ops_storefront_id IN :storefront_ids
+                    AND ws.id = :workspace_id
             ),
             sos_metrics AS (
                 SELECT
@@ -144,7 +144,7 @@ query_params = {
                     AND s.display_type = 'Paid'
                     AND s.product_position = '10'
                     AND s.timing = 'daily'
-                    AND DATE(created_datetime) BETWEEN %s AND %s
+                    AND DATE(created_datetime) BETWEEN :start_date AND :end_date
                 GROUP BY
                     s.keyword_id,
                     s.storefront_id,
@@ -185,7 +185,7 @@ query_params = {
                     AND p.ads_ops_storefront_id = dim.aos_id
                 WHERE
                     p.timing = 'daily'
-                    AND DATE(created_datetime) BETWEEN %s AND %s
+                    AND DATE(created_datetime) BETWEEN :start_date AND :end_date
                 GROUP BY
                     p.ads_ops_storefront_id,
                     p.keyword_id,
@@ -256,20 +256,17 @@ query_params = {
     """
 }
 
-def get_query(query_name, storefront_placeholders):
+def get_query(query_name):
     """
-    Get a query by name and format it with storefront and tag placeholders
+    Get a query by name.
     
     Args:
         query_name (str): Name of the query to retrieve ('count' or 'data')
-        storefront_placeholders (str): Placeholder string for storefront IDs (e.g., '%s, %s')
         
     Returns:
-        str: Formatted SQL query
+        str: SQL query
     """
-    return query_params[query_name].format(
-        storefront_placeholders=storefront_placeholders
-    )
+    return query_params[query_name]
 
 
 

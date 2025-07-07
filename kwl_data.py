@@ -25,7 +25,7 @@ query_params = {
                             ON storefront_keyword_a.keyword_id = keyword.id
                         WHERE true                    
                             AND storefront_keyword_a.timing = 'daily'
-                            AND created_datetime BETWEEN %s AND %s
+                            AND created_datetime BETWEEN :start_date AND :end_date
                         GROUP BY
                             storefront_keyword_a.keyword_id,
                             storefront_keyword_a.storefront_id
@@ -35,15 +35,15 @@ query_params = {
                         AND storefront_keyword_a.timing = 'daily'
                 WHERE true
                     AND storefront_keyword.keyword_type != 'irrelevant'
-                    and storefront.ads_ops_storefront_id IN ({storefront_placeholders})
-                    and workspace_id = %s
+                    and storefront.ads_ops_storefront_id IN :storefront_ids
+                    and workspace_id = :workspace_id
                 GROUP BY storefront_keyword.id,storefront_workspace.workspace_id,storefront_workspace.storefront_id
                 HAVING
                     (
                         MAX(storefront_keyword.keyword_type) != 'irrelevant'
                         and SUM(storefront_keyword_a.est_daily_search_volume) > '0'
-                        and MAX(storefront.ads_ops_storefront_id) IN ({storefront_placeholders})
-                        and MAX(workspace_id) = %s
+                        and MAX(storefront.ads_ops_storefront_id) IN :storefront_ids
+                        and MAX(workspace_id) = :workspace_id
                     )
             )
         select count(1)
@@ -114,7 +114,7 @@ query_params = {
                             ON storefront_keyword_a.keyword_id = keyword.id
                         WHERE true                    
                             AND storefront_keyword_a.timing = 'daily'
-                            AND created_datetime BETWEEN %s AND %s
+                            AND created_datetime BETWEEN :start_date AND :end_date
                         GROUP BY
                             storefront_keyword_a.keyword_id,
                             storefront_keyword_a.storefront_id
@@ -124,15 +124,15 @@ query_params = {
                         AND storefront_keyword_a.timing = 'daily'
                 WHERE true
                     AND storefront_keyword.keyword_type != 'irrelevant'
-                    and storefront.ads_ops_storefront_id IN ({storefront_placeholders})
-                    and workspace_id = %s
+                    and storefront.ads_ops_storefront_id IN :storefront_ids
+                    and workspace_id = :workspace_id
                 GROUP BY storefront_keyword.id,storefront_workspace.workspace_id,storefront_workspace.storefront_id
                 HAVING
                     (
                         MAX(storefront_keyword.keyword_type) != 'irrelevant'
                         and SUM(storefront_keyword_a.est_daily_search_volume) > '0'
-                        and MAX(storefront.ads_ops_storefront_id) IN ({storefront_placeholders})
-                        and MAX(workspace_id) = %s
+                        and MAX(storefront.ads_ops_storefront_id) IN :storefront_ids
+                        and MAX(workspace_id) = :workspace_id
                     )
             )
         SELECT
@@ -172,15 +172,14 @@ query_params = {
     """
 }
 
-def get_query(query_name, storefront_placeholders):
+def get_query(query_name):
     """
-    Get a query by name and format it with storefront placeholders
+    Get a query by name.
     
     Args:
         query_name (str): Name of the query to retrieve ('count' or 'data')
-        storefront_placeholders (str): Placeholder string for storefront IDs (e.g., '%s, %s')
         
     Returns:
-        str: Formatted SQL query
+        str: SQL query
     """
-    return query_params[query_name].format(storefront_placeholders=storefront_placeholders)
+    return query_params[query_name]

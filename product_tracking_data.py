@@ -26,7 +26,7 @@ query_params = {
                         AND product_a.timing = 'daily'
                         AND (
                             (
-                                created_datetime BETWEEN %s AND %s
+                                created_datetime BETWEEN :start_date AND :end_date
                             )
                         )
                     GROUP BY
@@ -40,8 +40,8 @@ query_params = {
                 AND product_a.timing = 'daily'
             WHERE true
                 AND (
-                    storefront.ads_ops_storefront_id in ({storefront_placeholders})
-                    and workspace.id = %s
+                    storefront.ads_ops_storefront_id IN :storefront_ids
+                    and workspace.id = :workspace_id
                 )
             GROUP BY
                 keyword_workspace.id,
@@ -106,7 +106,7 @@ query_params = {
                         AND product_a.timing = 'daily'
                         AND (
                             (
-                                created_datetime BETWEEN %s AND %s
+                                created_datetime BETWEEN :start_date AND :end_date
                             )
                         )
                     GROUP BY
@@ -121,8 +121,8 @@ query_params = {
             WHERE
                 (true)
                 AND (
-                    storefront.ads_ops_storefront_id in ({storefront_placeholders})
-                    and workspace.id = %s
+                    storefront.ads_ops_storefront_id IN :storefront_ids
+                    and workspace.id = :workspace_id
                 )
             GROUP BY
                 keyword_workspace.id,
@@ -154,17 +154,14 @@ query_params = {
     """
 }
 
-def get_query(query_name, storefront_placeholders):
+def get_query(query_name):
     """
-    Get a query by name and format it with storefront placeholders
+    Get a query by name.
     
     Args:
         query_name (str): Name of the query to retrieve ('count' or 'data')
-        storefront_placeholders (str): Placeholder string for storefront IDs (e.g., '%s, %s')
         
     Returns:
-        str: Formatted SQL query
+        str: SQL query
     """
-    return query_params[query_name].format(
-        storefront_placeholders=storefront_placeholders
-    )
+    return query_params[query_name]
