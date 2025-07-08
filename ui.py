@@ -67,8 +67,21 @@ def display_main_ui():
         with tab1:
             st.title("Keyword Performance Data Export")
             workspace_id, storefront_input, start_date, end_date = create_input_form('kw_pfm')
+
+            # Add new input fields for kw_pfm
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                device_type = st.selectbox("Device Type", ["Mobile", "Desktop"], key='device_type_kw_pfm')
+            with col2:
+                display_type = st.selectbox("Display Type", ["Paid", "Organic","Top"], key='display_type_kw_pfm')
+            with col3:
+                product_position = st.selectbox("Product Position", ["10", "4", "-1"], key='product_position_kw_pfm')
+
             if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kw_pfm'):
-                handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kw_pfm')
+                handle_get_data_button(
+                    workspace_id, storefront_input, start_date, end_date, 'kw_pfm',
+                    device_type=device_type, display_type=display_type, product_position=product_position
+                )
 
         # Product Tracking Tab
         with tab2:
@@ -131,17 +144,22 @@ def display_main_ui():
 
 
 
-def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source):
+def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source, **kwargs):
     """Handles the logic when 'Get Data' is clicked."""
     st.session_state.stage = 'initial'
     st.session_state.params = {}
+
+    # Call the main export process logic
     stage, params = handle_export_process(
         workspace_id,
         storefront_input,
         start_date,
         end_date,
-        data_source=data_source
+        data_source,
+        **kwargs
     )
     st.session_state.stage = stage
     st.session_state.params = params
+
+    # Rerun to update the UI based on the new state
     st.rerun()
