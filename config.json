@@ -1,7 +1,7 @@
 {
     "db_host": "10.148.2.2",
-    "db_port": "3306",
-    "db_user": "quangcao",
-    "db_password": "UsT4QSAFIGrpLEbqysup4Bk1mRvrxA",
-    "db_name": "system_health"
+    "db_port": "...",
+    "db_user": "...",
+    "db_password": "...",
+    "db_name": "..."
 }
