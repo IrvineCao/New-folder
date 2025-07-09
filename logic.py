@@ -43,6 +43,11 @@ def validate_inputs(workspace_id, storefront_input, start_date, end_date):
 
     if start_date > end_date:
         errors.append("Start date cannot be after end date.")
+    
+    date_range_days = (end_date - start_date).days
+    if date_range_days > 60: # Ví dụ: Giới hạn cứng là 90 ngày
+        errors.append(f"The period is too long ({date_range_days} days). Please select up to 60 days to ensure performance.")
+
     return errors
 
 
@@ -54,6 +59,7 @@ def process_storefront_input(storefront_input):
         return None
 
 
+
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
 def get_data(query_type: str, data_source: str, **kwargs):
     """
@@ -62,23 +68,14 @@ def get_data(query_type: str, data_source: str, **kwargs):
     get_query_func = get_query_by_source(data_source)
     query = get_query_func(query_type)
 
-    # Prepare parameters for the SQL query from kwargs
-    params = {
-        'workspace_id': kwargs.get('workspace_id'),
-        'storefront_ids': tuple(kwargs.get('storefront_id', [])),
-        'start_date': kwargs.get('start_date'),
-        'end_date': kwargs.get('end_date')
-    }
-
-    # Add extra parameters for kw_pfm data source
-    if data_source == 'kw_pfm':
-        params['device_type'] = kwargs.get('device_type')
-        params['display_type'] = kwargs.get('display_type')
-        params['product_position'] = kwargs.get('product_position')
+    # Đảm bảo storefront_ids là một tuple để tương thích với câu lệnh 'IN' của SQL
+    if 'storefront_ids' in kwargs and isinstance(kwargs['storefront_ids'], list):
+        kwargs['storefront_ids'] = tuple(kwargs['storefront_ids'])
 
     with get_connection() as db:
-        # Use text() to enable named parameters and safely pass them to the database.
-        return pd.read_sql(text(query), db.connection(), params=params)
+        # Truyền thẳng kwargs vào params, SQLAlchemy sẽ tự động khớp các biến
+        return pd.read_sql(text(query), db.connection(), params=kwargs)
+
 
 
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str, **kwargs):
@@ -88,41 +85,34 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         for error in errors:
             st.error(error)
         st.stop()
-    
-    storefront_ids = process_storefront_input(storefront_input)
-    if not storefront_ids:
-        st.error("Invalid Storefront EID format")
-        st.stop()
-    
+
+    # Cảnh báo nếu khoảng thời gian quá dài
+    date_range_days = (end_date - start_date).days
+    if 30 < date_range_days <= 60:
+        st.warning(f"⚠️ The period is too long ({date_range_days} days). Processing may take longer than usual.")
+
+    # 1. Lưu tất cả tham số vào session_state
     st.session_state.params = {
         "workspace_id": int(workspace_id),
-        "storefront_ids": storefront_ids,
-        "start_date_str": start_date.strftime('%Y-%m-%d'),
-        "end_date_str": end_date.strftime('%Y-%m-%d'),
+        "storefront_ids": process_storefront_input(storefront_input),
+        "start_date": start_date.strftime('%Y-%m-%d'),
+        "end_date": end_date.strftime('%Y-%m-%d'),
         "data_source": data_source
     }
-    st.session_state.params.update(kwargs)
-    
-    # Prepare parameters for get_data, including extra ones for kw_pfm
-    get_data_params = {
-        'workspace_id': st.session_state.params['workspace_id'],
-        'storefront_id': tuple(st.session_state.params['storefront_ids']),
-        'start_date': st.session_state.params['start_date_str'],
-        'end_date': st.session_state.params['end_date_str'],
-        'query_type': "count",
-        'data_source': data_source
-    }
-    if data_source == 'kw_pfm':
-        get_data_params['device_type'] = st.session_state.params.get('device_type')
-        get_data_params['display_type'] = st.session_state.params.get('display_type')
-        get_data_params['product_position'] = st.session_state.params.get('product_position')
+    st.session_state.params.update(kwargs) # Thêm các tham số phụ như device_type
 
     try:
         with st.spinner("Checking data size..."):
-            num_row_df = get_data(**get_data_params)
-            num_row = num_row_df.iloc[0, 0]
+            # 2. Tạo bản sao từ session_state để gọi hàm count
+            count_params = st.session_state.params.copy()
+            count_params['query_type'] = 'count'
+
+            # 3. Gọi get_data với các tham số đã được "mở" ra
+            num_row_df = get_data(**count_params)
+            num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
             st.session_state.params['num_row'] = num_row
 
+        # Logic phân loại số dòng giữ nguyên
         if num_row == 0:
             st.warning("No data found for the selected criteria.")
             st.session_state.stage = 'initial'
@@ -141,27 +131,16 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
     return st.session_state.stage, st.session_state.params
 
 
+
 def load_and_store_data(data_source: str):
     """Load data and store it in the session state."""
     try:
         with st.spinner("Loading data..."):
-            params = st.session_state.params
+            # Tạo bản sao từ session_state để gọi hàm lấy data
+            data_params = st.session_state.params.copy()
+            data_params['query_type'] = 'data'
 
-            # Prepare parameters for get_data, including extra ones for kw_pfm
-            get_data_params = {
-                'workspace_id': params['workspace_id'],
-                'storefront_id': tuple(params['storefront_ids']),
-                'start_date': params['start_date_str'],
-                'end_date': params['end_date_str'],
-                'query_type': "data",
-                'data_source': data_source
-            }
-            if data_source == 'kw_pfm':
-                get_data_params['device_type'] = params.get('device_type')
-                get_data_params['display_type'] = params.get('display_type')
-                get_data_params['product_position'] = params.get('product_position')
-
-            df = get_data(**get_data_params)
+            df = get_data(**data_params)
             st.session_state.df = df
             st.session_state.stage = 'loaded'
     except Exception as e:
@@ -169,8 +148,13 @@ def load_and_store_data(data_source: str):
         st.session_state.stage = 'initial'
 
 
+
 def convert_df_to_csv(df: pd.DataFrame):
     """Convert a DataFrame to a CSV string for downloading."""
     output = StringIO()
-    df.to_csv(output, index=False, encoding='utf-8')
+    
+    # test định dạng file csv
+    # Sửa từ 'utf-8' thành 'utf-8-sig'
+    df.to_csv(output, index=False, encoding='utf-8-sig')
+    
     return output.getvalue()
