@@ -15,7 +15,6 @@ def load_config():
 config = load_config()
 
 # Construct the database URL for SQLAlchemy
-# Format: dialect+driver://username:password@host:port/database
 SQLALCHEMY_DATABASE_URL = (
     f"singlestoredb://{config['db_user']}:{config['db_password']}@"
     f"{config['db_host']}:{config['db_port']}/{config['db_name']}"
@@ -25,10 +24,10 @@ SQLALCHEMY_DATABASE_URL = (
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     poolclass=QueuePool,
-    pool_size=10,        # max 10 kết nối trong pool
-    max_overflow=5,      # thêm 5 khi cần
-    pool_timeout=30,     # chờ tối đa 30 giây để lấy connection
-    pool_recycle=1800    # recycle connection mỗi 30 phút (tránh timeout)
+    pool_size=10,
+    max_overflow=5,
+    pool_timeout=30,
+    pool_recycle=1800
 )
 
 # Create a configured "Session" class

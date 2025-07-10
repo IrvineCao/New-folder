@@ -1,26 +1,22 @@
 import streamlit as st
 import pandas as pd
 from io import StringIO
-from kwl_data import get_query as get_kwl_query
-from kw_pfm_data import get_query as get_kw_pfm_query
-from product_tracking_data import get_query as get_pt_query
-from pi_data import get_query as get_pi_query
 from sqlalchemy import text
-from database import get_connection
+from utils.database import get_connection
+from data_logic import kwl_data, kw_pfm_data, product_tracking_data, pi_data
 
-# Helper function to select the correct get_query function
 def get_query_by_source(data_source: str):
     """
     Returns the appropriate get_query function based on the data source.
     """
     if data_source == 'kwl':
-        return get_kwl_query
+        return kwl_data.get_query
     elif data_source == 'kw_pfm':
-        return get_kw_pfm_query
+        return kw_pfm_data.get_query
     elif data_source == 'pt':
-        return get_pt_query
+        return product_tracking_data.get_query
     elif data_source == 'pi':
-        return get_pi_query
+        return pi_data.get_query
     else:
         raise ValueError(f"Unknown data source: {data_source}")
 
@@ -131,9 +127,6 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         st.error(f"An error occurred: {e}")
         st.session_state.stage = 'initial'
 
-    return st.session_state.stage, st.session_state.params
-
-
 def load_data(data_source: str):
     """Load data based on params in session state and return a DataFrame."""
     try:
@@ -151,3 +144,21 @@ def convert_df_to_csv(df: pd.DataFrame):
     output = StringIO()
     df.to_csv(output, index=False, encoding='utf-8-sig')
     return output.getvalue()
+
+
+def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source, **kwargs):
+    """Xử lý logic khi nút 'Get Data' được nhấn."""
+    # Xóa trạng thái cũ khi bắt đầu một yêu cầu mới
+    if st.session_state.params.get('data_source') != data_source:
+        st.session_state.stage = 'initial'
+        st.session_state.params = {}
+        st.session_state.df = None
+
+    handle_export_process(
+        workspace_id,
+        storefront_input,
+        start_date,
+        end_date,
+        data_source=data_source,
+        **kwargs
+    )
