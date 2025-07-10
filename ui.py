@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import datetime, timedelta
-from logic import handle_export_process, load_and_store_data, convert_df_to_csv
+from logic import handle_export_process, load_data, convert_df_to_csv
 
 def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     """
@@ -32,12 +32,14 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     pfm_options = {} # Từ điển để chứa các tùy chọn phụ
 
     with st.container():
-        # --- Cột cho các input chính ---
-        main_cols = st.columns(4)
+        # --- Hàng 1 cho các input chính ---
+        main_cols = st.columns(3)
         with main_cols[0]:
             workspace_id = st.text_input("Workspace ID *", "", key=f"ws_id_{source_key}")
         with main_cols[1]:
             storefront_input = st.text_input("Storefront EID *", "", key=f"sf_id_{source_key}")
+            if len(storefront_input.split(',')) > 1:
+                st.info("💡 Pro-tip: For faster performance with multiple storefronts, select a smaller date range (e.g.,30-60 days).")
         with main_cols[2]:
             selected_option = st.selectbox(
                 "Select time range *",
@@ -46,9 +48,12 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
                 key=f"date_preset_{source_key}"
             )
 
+        # --- Hàng 2 cho Custom time range (chỉ hiển thị khi cần) ---
         if selected_option == "Custom time range":
-            with main_cols[3]:
+            custom_date_cols = st.columns(2)
+            with custom_date_cols[0]:
                 start_date = st.date_input("Start Date", value=yesterday, max_value=yesterday, key=f"start_date_{source_key}")
+            with custom_date_cols[1]:
                 end_date = st.date_input("End Date", value=yesterday, max_value=yesterday, key=f"end_date_{source_key}")
         else:
             dates = date_options[selected_option]
@@ -80,16 +85,17 @@ def display_main_ui():
 
     if page == 'Keyword Lab':
         st.title("Keyword Level Data Export")
+        
         workspace_id, storefront_input, start_date, end_date, _ = create_input_form('kwl')
         if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kwl', disabled=is_loading):
             handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kwl')
 
+
     elif page == 'Digital Shelf Analytics':
-        tab1, tab2 = st.tabs(["Keyword Performance", "Product Tracking"])
+        tab1, tab2, tab3 = st.tabs(["Keyword Performance", "Product Tracking","Competition Landscape"])
 
         with tab1:
             st.title("Keyword Performance Data Export")
-            # Gọi form với tùy chọn hiển thị thêm bộ lọc
             workspace_id, storefront_input, start_date, end_date, pfm_options = create_input_form(
                 'kw_pfm', show_kw_pfm_options=True
             )
@@ -102,16 +108,22 @@ def display_main_ui():
 
         with tab2:
             st.title("Product Tracking Data Export")
-            # Gọi form ở chế độ mặc định
             workspace_id, storefront_input, start_date, end_date, _ = create_input_form('pt')
             if st.button("Get Data", type="primary", use_container_width=True, key='get_data_pt', disabled=is_loading):
                 handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'pt')
 
+        with tab3:
+            st.title("Competition Landscape Data Export")
+            st.write("Coming soon...")
+            # workspace_id, storefront_input, start_date, end_date, _ = create_input_form('pi')
+            # if st.button("Get Data", type="primary", use_container_width=True, key='get_data_pi', disabled=is_loading):
+            #     handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'pi')
 
 
 # Development Zone
     # Performance Index
     elif page == 'Performance Index':
+        st.title("Performance Index Data Export")
         st.write("Coming soon...")
 
         # st.title("Performance Index Data Export")
@@ -143,7 +155,12 @@ def display_main_ui():
 
     elif st.session_state.stage == 'loading':
         with st.spinner("Loading data, please wait..."):
-            load_and_store_data(st.session_state.params.get('data_source'))
+            df = load_data(st.session_state.params.get('data_source'))
+            if df is not None:
+                st.session_state.df = df
+                st.session_state.stage = 'loaded'
+            else:
+                st.session_state.stage = 'initial'
         st.rerun()
 
     elif st.session_state.stage == 'loaded':
