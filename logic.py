@@ -48,9 +48,9 @@ def validate_inputs(workspace_id, storefront_input, start_date, end_date):
     date_range_days = (end_date - start_date).days
     max_days_allowed = 60
 
-    if num_storefronts > 1 and num_storefronts <= 3:
+    if num_storefronts > 1 and num_storefronts <= 2:
         max_days_allowed = 60
-    elif num_storefronts > 3:
+    elif num_storefronts > 2:
         max_days_allowed = 30
 
     if date_range_days > max_days_allowed:
@@ -116,7 +116,7 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
             num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
             st.session_state.params['num_row'] = num_row
 
-        if num_row == 0:
+        if num_row == 0 or num_row is None:
             st.warning("No data found for the selected criteria.")
             st.session_state.stage = 'initial'
         elif 10000 < num_row <= 50000:
