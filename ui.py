@@ -48,7 +48,7 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
 
         if selected_option == "Custom time range":
             with main_cols[3]:
-                start_date = st.date_input("Start Date", value=(today - timedelta(days=7)), max_value=yesterday, key=f"start_date_{source_key}")
+                start_date = st.date_input("Start Date", value=yesterday, max_value=yesterday, key=f"start_date_{source_key}")
                 end_date = st.date_input("End Date", value=yesterday, max_value=yesterday, key=f"end_date_{source_key}")
         else:
             dates = date_options[selected_option]

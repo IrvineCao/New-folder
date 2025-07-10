@@ -39,9 +39,9 @@ query_params = {
                         ON s.keyword_id = dim.dim_keyword_id
                         AND s.storefront_id = dim.storefront_id
                 WHERE true
-                    AND s.device_type = :device_type
-                    AND s.display_type = :display_type
-                    AND s.product_position = :product_position
+                    AND (:device_type is null or s.device_type = :device_type)
+                    AND (:display_type is null or s.display_type = :display_type)
+                    AND (:product_position is null or s.product_position = :product_position)
                     AND s.timing = 'daily'
                     AND DATE(created_datetime) BETWEEN :start_date AND :end_date
                 GROUP BY
@@ -140,9 +140,9 @@ query_params = {
                         ON s.keyword_id = dim.dim_keyword_id
                         AND s.storefront_id = dim.storefront_id
                 WHERE true
-                    AND s.device_type = :device_type
-                    AND s.display_type = :display_type
-                    AND s.product_position = :product_position
+                    AND (:device_type is null or s.device_type = :device_type)
+                    AND (:display_type is null or s.display_type = :display_type)
+                    AND (:product_position is null or s.product_position = :product_position)
                     AND s.timing = 'daily'
                     AND DATE(created_datetime) BETWEEN :start_date AND :end_date
                 GROUP BY

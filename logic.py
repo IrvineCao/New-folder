@@ -4,6 +4,7 @@ from io import StringIO
 from kwl_data import get_query as get_kwl_query
 from kw_pfm_data import get_query as get_kw_pfm_query
 from product_tracking_data import get_query as get_pt_query
+from pi_data import get_query as get_pi_query
 from sqlalchemy import text
 from database import get_connection
 
@@ -18,6 +19,8 @@ def get_query_by_source(data_source: str):
         return get_kw_pfm_query
     elif data_source == 'pt':
         return get_pt_query
+    elif data_source == 'pi':
+        return get_pi_query
     else:
         raise ValueError(f"Unknown data source: {data_source}")
 
