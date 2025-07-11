@@ -21,11 +21,34 @@ def get_query_by_source(data_source: str):
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
 def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
     """
-    Lấy dữ liệu từ CSDL, có thể tùy chọn giới hạn số dòng.
-    Hàm này được cache để tăng tốc độ.
+    Lấy dữ liệu từ CSDL, xử lý mệnh đề IN một cách thủ công để đảm bảo cú pháp đúng.
     """
     get_query_func = get_query_by_source(data_source)
     base_query_str = get_query_func(query_type)
+    
+    params_to_bind = kwargs.copy()
+
+    # === GIẢI PHÁP DỨT ĐIỂM CHO MỆNH ĐỀ IN ===
+    # Xử lý mệnh đề IN cho storefront_ids bằng cách định dạng trực tiếp vào chuỗi
+    if 'storefront_ids' in params_to_bind and isinstance(params_to_bind['storefront_ids'], (list, tuple)):
+        storefront_ids = params_to_bind['storefront_ids']
+        
+        # Đảm bảo tất cả các ID là số nguyên để tránh SQL Injection
+        safe_ids = [int(sid) for sid in storefront_ids]
+        
+        # Chuyển danh sách thành chuỗi, ví dụ: '(123, 456)'
+        if len(safe_ids) == 1:
+            ids_string = f"({safe_ids[0]})"
+        else:
+            ids_string = str(tuple(safe_ids))
+
+        # Thay thế placeholder bằng chuỗi đã được định dạng
+        # Áp dụng cho cả hai loại placeholder để đảm bảo tính tương thích
+        base_query_str = base_query_str.replace('__STOREFRONT_IDS_PLACEHOLDER__', ids_string)
+        base_query_str = base_query_str.replace(':storefront_ids', ids_string)
+
+        # Xóa khóa cũ khỏi từ điển tham số để không bị truyền hai lần
+        del params_to_bind['storefront_ids']
 
     if limit is not None and query_type == 'data':
         final_query_str = f"{base_query_str} LIMIT {limit}"
@@ -33,28 +56,37 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
         final_query_str = base_query_str
     
     query = text(final_query_str)
-
-    if 'storefront_ids' in kwargs and isinstance(kwargs['storefront_ids'], list):
-        kwargs['storefront_ids'] = tuple(kwargs['storefront_ids'])
-
+    
     with get_connection() as db:
-        return pd.read_sql(query, db.connection(), params=kwargs)
+        return pd.read_sql(query, db.connection(), params=params_to_bind)
+
+# --- CÁC HÀM CÒN LẠI KHÔNG THAY ĐỔI ---
+def build_params_for_query(data_source: str, source_params: dict):
+    """Xây dựng một từ điển tham số sạch cho câu lệnh SQL."""
+    required_params = {
+        "workspace_id": source_params.get("workspace_id"),
+        "storefront_ids": source_params.get("storefront_ids"),
+        "start_date": source_params.get("start_date"),
+        "end_date": source_params.get("end_date"),
+    }
+    
+    if data_source == 'kw_pfm':
+        required_params["device_type"] = source_params.get("device_type")
+        required_params["display_type"] = source_params.get("display_type")
+        required_params["product_position"] = source_params.get("product_position")
+        
+    return required_params
 
 def load_data(data_source: str, limit: int = None):
-    """Tải dữ liệu dựa trên các tham số trong session_state."""
+    """Tải dữ liệu dựa trên các tham số trong session state."""
     try:
-        # Lấy các tham số từ session_state một cách an toàn
-        params = st.session_state.get('params', {}).copy()
-        
-        # Loại bỏ các khóa không phải là tham số của query
-        params.pop('data_source', None)
-        params.pop('num_row', None)
+        params_for_load = build_params_for_query(data_source, st.session_state.get('params', {}))
         
         df = get_data(
             query_type='data', 
             data_source=data_source, 
             limit=limit, 
-            **params
+            **params_for_load
         )
         return df
     except Exception as e:
@@ -62,16 +94,13 @@ def load_data(data_source: str, limit: int = None):
         return None
 
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str, **kwargs):
-    """
-    Xử lý toàn bộ quy trình: xác thực, đếm số dòng, và cập nhật trạng thái.
-    """
+    """Xử lý toàn bộ quy trình: xác thực, đếm số dòng, và cập nhật trạng thái."""
     errors = validate_inputs(workspace_id, storefront_input, start_date, end_date)
     if errors:
         for error in errors:
             st.error(error)
         st.stop()
     
-    # Tập trung tất cả tham số vào một nơi duy nhất
     st.session_state.params = {
         "workspace_id": int(workspace_id),
         "storefront_ids": process_storefront_input(storefront_input),
@@ -83,9 +112,7 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
 
     try:
         with st.spinner("Checking data size..."):
-            # Lấy các tham số cho query count từ st.session_state.params
-            params_for_count = st.session_state.params.copy()
-            params_for_count.pop('data_source', None)
+            params_for_count = build_params_for_query(data_source, st.session_state.params)
             
             num_row_df = get_data('count', data_source, **params_for_count)
             num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
@@ -98,7 +125,6 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
             st.error(f"Data is too large to export ({num_row:,} rows). Please narrow your selection.")
             st.session_state.stage = 'initial'
         else:
-            # Nếu thành công, chuyển sang giai đoạn tải preview
             st.session_state.stage = 'loading_preview'
 
     except OperationalError:
@@ -113,7 +139,6 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
 
 def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source, **kwargs):
     """Hàm xử lý sự kiện khi nhấn nút 'Get Data'."""
-    # Reset lại trạng thái nếu đang thực hiện cho một nguồn dữ liệu mới
     if st.session_state.params.get('data_source') != data_source:
         st.session_state.stage = 'initial'
         st.session_state.params = {}
@@ -127,7 +152,6 @@ def handle_get_data_button(workspace_id, storefront_input, start_date, end_date,
         data_source=data_source,
         **kwargs
     )
-    # Chạy lại script để giao diện được cập nhật theo 'stage' mới
     st.rerun()
 
 def validate_inputs(workspace_id, storefront_input, start_date, end_date):

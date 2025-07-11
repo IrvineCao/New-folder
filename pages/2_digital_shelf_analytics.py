@@ -4,45 +4,51 @@ from utils.logic import handle_get_data_button
 from utils.state import initialize_session_state
 
 initialize_session_state()
-# Đặt cấu hình cho trang
+
 st.set_page_config(page_title="Digital Shelf Analytics", layout="wide")
 st.title("Digital Shelf Analytics")
 
-# Lấy trạng thái loading để vô hiệu hóa các nút khi cần
-is_loading = st.session_state.stage in ['loading', 'waiting_confirmation']
-
-# Tạo các tab
 tab1, tab2, tab3 = st.tabs(["Keyword Performance", "Product Tracking", "Competition Landscape"])
 
 with tab1:
+    DATA_SOURCE_KEY = 'kw_pfm'
     st.header("Keyword Performance Data Export")
-    # Tạo form nhập liệu cho tab Keyword Performance
-    workspace_id_kw_pfm, storefront_input_kw_pfm, start_date_kw_pfm, end_date_kw_pfm, pfm_options = create_input_form(
-        'kw_pfm', show_kw_pfm_options=True
-    )
-
-    # Xử lý khi nhấn nút Get Data
-    if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kw_pfm', disabled=is_loading):
-        handle_get_data_button(
-            workspace_id_kw_pfm, storefront_input_kw_pfm, start_date_kw_pfm, end_date_kw_pfm, 'kw_pfm',
-            **pfm_options
-        )
     
-    # Chỉ hiển thị kết quả nếu dữ liệu được tải cho tab này
-    if st.session_state.params.get('data_source') == 'kw_pfm':
+    workspace_id, storefront_input, start_date, end_date, pfm_options = create_input_form(
+        DATA_SOURCE_KEY, show_kw_pfm_options=True
+    )
+    
+    # Điều kiện hiển thị nút cho tab này
+    show_button_tab1 = (st.session_state.stage == 'initial' or 
+                        st.session_state.params.get('data_source') != DATA_SOURCE_KEY)
+    
+    if show_button_tab1:
+        if st.button("Preview Data", type="primary", use_container_width=True, key=f'get_data_{DATA_SOURCE_KEY}'):
+            handle_get_data_button(
+                workspace_id, storefront_input, start_date, end_date, DATA_SOURCE_KEY,
+                **pfm_options
+            )
+            
+    # Hiển thị kết quả cho tab này
+    if st.session_state.params.get('data_source') == DATA_SOURCE_KEY and st.session_state.stage != 'initial':
         display_data_exporter()
 
 with tab2:
+    DATA_SOURCE_KEY = 'pt'
     st.header("Product Tracking Data Export")
-    # Tạo form nhập liệu cho tab Product Tracking
-    workspace_id_pt, storefront_input_pt, start_date_pt, end_date_pt, _ = create_input_form('pt')
 
-    # Xử lý khi nhấn nút Get Data
-    if st.button("Get Data", type="primary", use_container_width=True, key='get_data_pt', disabled=is_loading):
-        handle_get_data_button(workspace_id_pt, storefront_input_pt, start_date_pt, end_date_pt, 'pt')
-
-    # Chỉ hiển thị kết quả nếu dữ liệu được tải cho tab này
-    if st.session_state.params.get('data_source') == 'pt':
+    workspace_id, storefront_input, start_date, end_date, _ = create_input_form(DATA_SOURCE_KEY)
+    
+    # Điều kiện hiển thị nút cho tab này
+    show_button_tab2 = (st.session_state.stage == 'initial' or 
+                        st.session_state.params.get('data_source') != DATA_SOURCE_KEY)
+                        
+    if show_button_tab2:
+        if st.button("Preview Data", type="primary", use_container_width=True, key=f'get_data_{DATA_SOURCE_KEY}'):
+            handle_get_data_button(workspace_id, storefront_input, start_date, end_date, DATA_SOURCE_KEY)
+            
+    # Hiển thị kết quả cho tab này
+    if st.session_state.params.get('data_source') == DATA_SOURCE_KEY and st.session_state.stage != 'initial':
         display_data_exporter()
 
 with tab3:

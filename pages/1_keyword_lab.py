@@ -4,20 +4,26 @@ from utils.logic import handle_get_data_button
 from utils.state import initialize_session_state
 
 initialize_session_state()
-# Đặt tiêu đề cho trang
+
 st.set_page_config(page_title="Keyword Lab", layout="wide")
 st.title("Keyword Level Data Export")
 
-# Lấy trạng thái loading
-is_loading = st.session_state.stage in ['loading', 'waiting_confirmation']
+DATA_SOURCE_KEY = 'kwl'
 
-# Tạo form nhập liệu
-workspace_id, storefront_input, start_date, end_date, _ = create_input_form('kwl')
+# Hiển thị form nhập liệu
+workspace_id, storefront_input, start_date, end_date, _ = create_input_form(DATA_SOURCE_KEY)
 
-# Xử lý khi nhấn nút
-if st.button("Get Data", type="primary", use_container_width=True, key='get_data_kwl', disabled=is_loading):
-    handle_get_data_button(workspace_id, storefront_input, start_date, end_date, 'kwl')
+# Điều kiện để hiển thị nút "Preview Data"
+# Nút sẽ hiển thị nếu:
+# 1. Trạng thái là 'initial'
+# 2. Hoặc, trạng thái không phải 'initial' NHƯNG nguồn dữ liệu đang xử lý không phải là của trang này.
+show_button = (st.session_state.stage == 'initial' or 
+               st.session_state.params.get('data_source') != DATA_SOURCE_KEY)
 
-# Luôn kiểm tra và hiển thị kết quả nếu data source khớp
-if st.session_state.params.get('data_source') == 'kwl':
+if show_button:
+    if st.button("Preview Data", type="primary", use_container_width=True, key=f'get_data_{DATA_SOURCE_KEY}'):
+        handle_get_data_button(workspace_id, storefront_input, start_date, end_date, DATA_SOURCE_KEY)
+
+# Hiển thị phần kết quả chỉ khi nguồn dữ liệu khớp và không ở trạng thái ban đầu
+if st.session_state.params.get('data_source') == DATA_SOURCE_KEY and st.session_state.stage != 'initial':
     display_data_exporter()
