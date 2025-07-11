@@ -4,6 +4,7 @@ from io import StringIO
 from sqlalchemy import text
 from utils.database import get_connection
 from data_logic import kwl_data, kw_pfm_data, product_tracking_data, pi_data
+from sqlalchemy.exc import OperationalError
 
 def get_query_by_source(data_source: str):
     """
@@ -69,18 +70,34 @@ def process_storefront_input(storefront_input):
 
 
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
-def get_data(query_type: str, data_source: str, **kwargs):
+def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
     """
     Get data based on the specified query type using SQLAlchemy session.
+    Can optionally limit the number of rows returned.
     """
     get_query_func = get_query_by_source(data_source)
-    query = get_query_func(query_type)
+    
+    # Lấy câu lệnh SQL gốc
+    base_query_str = get_query_func(query_type)
+    
+    # Tạo một truy vấn có thể thực thi từ chuỗi SQL
+    query = text(base_query_str)
+    
+    # Nếu có tham số limit, bọc truy vấn gốc trong một truy vấn mới và thêm LIMIT
+    if limit is not None and query_type == 'data':
+        # Tạo một Common Table Expression (CTE) từ câu lệnh gốc
+        cte = select(literal_column("*")).select_from(query).cte("original_query")
+        # Tạo câu lệnh cuối cùng để chọn từ CTE và áp dụng LIMIT
+        final_query = select(literal_column("*")).select_from(cte).limit(limit)
+        query = final_query
 
+    # Xử lý các tham số
     if 'storefront_ids' in kwargs and isinstance(kwargs['storefront_ids'], list):
         kwargs['storefront_ids'] = tuple(kwargs['storefront_ids'])
 
+    # Thực thi truy vấn
     with get_connection() as db:
-        return pd.read_sql(text(query), db.connection(), params=kwargs)
+        return pd.read_sql(query, db.connection(), params=kwargs)
 
 
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str, **kwargs):
@@ -122,7 +139,9 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
             st.session_state.stage = 'initial'
         else:
             st.session_state.stage = 'loading'
-
+    except OperationalError:
+        st.error("❌ Database connection failed. Please check the network or contact the administrator.")
+        st.session_state.stage = 'initial'
     except Exception as e:
         st.error(f"An error occurred: {e}")
         st.session_state.stage = 'initial'
