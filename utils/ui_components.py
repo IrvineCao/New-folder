@@ -114,6 +114,16 @@ def display_data_exporter():
                 st.session_state.df_preview = None
                 st.session_state.params = {}
                 st.rerun()
+            if st.button("🔄 Start New Export", use_container_width=True):
+                # Xóa các session state liên quan đến yêu cầu hiện tại
+                st.session_state.stage = 'initial'
+                st.session_state.df_preview = None
+                st.session_state.params = {}
+                # Xóa các giá trị nhập liệu đã lưu để reset form
+                for key in list(st.session_state.keys()):
+                    if key.startswith('ws_id_') or key.startswith('sf_id_'):
+                        del st.session_state[key]
+                st.rerun()
         else:
             st.warning("No data to display.")
             st.session_state.stage = 'initial'
