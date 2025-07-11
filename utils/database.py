@@ -1,23 +1,29 @@
-import json
-import singlestoredb as s2
+# utils/database.py
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from contextlib import contextmanager
 from sqlalchemy.pool import QueuePool
+from dotenv import load_dotenv
 
-# Function to load database configuration from config.json
-def load_config():
-    with open('config.json') as f:
-        return json.load(f)
+# Tải các biến môi trường từ tệp .env
+load_dotenv() 
 
-# Load configuration
-config = load_config()
+# Lấy thông tin cấu hình từ biến môi trường
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+
+# Kiểm tra xem các biến có tồn tại không
+if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
+    raise ValueError("Database configuration is missing from environment variables.")
 
 # Construct the database URL for SQLAlchemy
 SQLALCHEMY_DATABASE_URL = (
-    f"singlestoredb://{config['db_user']}:{config['db_password']}@"
-    f"{config['db_host']}:{config['db_port']}/{config['db_name']}"
+    f"singlestoredb://{DB_USER}:{DB_PASSWORD}@"
+    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
 # Create the SQLAlchemy engine
@@ -30,23 +36,10 @@ engine = create_engine(
     pool_recycle=1800
 )
 
-# Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create a Base class for declarative class definitions
-Base = declarative_base()
-
-# Dependency to get a DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @contextmanager
 def get_connection():
-    """Context manager for providing a database session."""
     db = SessionLocal()
     try:
         yield db

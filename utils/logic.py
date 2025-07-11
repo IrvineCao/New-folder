@@ -142,8 +142,11 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
     except OperationalError:
         st.error("❌ Database connection failed. Please check the network or contact the administrator.")
         st.session_state.stage = 'initial'
+    except ProgrammingError as e:
+        st.error(f"❌ An error occurred in the SQL query: {e}")
+        st.session_state.stage = 'initial'
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        st.error(f"An unexpected error occurred: {e}")
         st.session_state.stage = 'initial'
 
 def load_data(data_source: str):
@@ -169,7 +172,7 @@ def handle_get_data_button(workspace_id, storefront_input, start_date, end_date,
     """Xử lý logic khi nút 'Get Data' được nhấn."""
     # Xóa trạng thái cũ khi bắt đầu một yêu cầu mới
     if st.session_state.params.get('data_source') != data_source:
-        st.session_state.stage = 'initial'
+        st.session_state.stage = 'loading_preview'
         st.session_state.params = {}
         st.session_state.df = None
 
