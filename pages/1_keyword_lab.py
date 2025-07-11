@@ -1,7 +1,9 @@
 import streamlit as st
 from utils.ui_components import create_input_form, display_data_exporter
 from utils.logic import handle_get_data_button
+from utils.state import initialize_session_state
 
+initialize_session_state()
 # Đặt tiêu đề cho trang
 st.set_page_config(page_title="Keyword Lab", layout="wide")
 st.title("Keyword Level Data Export")

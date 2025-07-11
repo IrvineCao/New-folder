@@ -63,87 +63,77 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     return workspace_id, storefront_input, start_date, end_date, pfm_options
 
 def display_data_exporter():
+    """Hiển thị toàn bộ luồng xử lý dữ liệu từ preview đến download."""
+    
+    # Giai đoạn 1: Tải preview (500 dòng)
     if st.session_state.stage == 'loading_preview':
         start_time = time.time()
         with st.spinner("Loading preview (500 rows)..."):
-            # Chỉ tải 500 dòng để xem trước
             df_preview = load_data(st.session_state.params.get('data_source'), limit=500)
-            if df_preview is not None:
+            if df_preview is not None and not df_preview.empty:
                 st.session_state.df_preview = df_preview
                 st.session_state.stage = 'loaded'
             else:
+                st.warning("No data found for the selected criteria.")
                 st.session_state.stage = 'initial'
-        end_time = time.time()
-        st.session_state.query_duration = end_time - start_time
+        st.session_state.query_duration = time.time() - start_time
         st.rerun()
-
+    
+    # Giai đoạn 2: Hiển thị preview và các tùy chọn
     elif st.session_state.stage == 'loaded':
         df_preview = st.session_state.get('df_preview')
-        if df_preview is not None and not df_preview.empty:
-            st.success("✅ Preview loaded successfully!")
-            
-            # --- PHẦN TÓM TẮT ---
-            total_rows_estimated = st.session_state.params.get('num_row', 0)
-            num_storefronts = len(st.session_state.params.get('storefront_ids', []))
-            start_date, end_date = datetime.strptime(st.session_state.params['start_date'], '%Y-%m-%d'), datetime.strptime(st.session_state.params['end_date'], '%Y-%m-%d')
-            total_days = (end_date - start_date).days + 1
-            query_duration = st.session_state.get('query_duration', 0)
+        if df_preview is None:
+            st.session_state.stage = 'initial'
+            st.rerun()
 
-            with st.expander("📊 **Export Summary**", expanded=True):
-                cols = st.columns(4)
-                cols[0].metric("Total Rows (Estimated)", f"{total_rows_estimated:,}")
-                cols[1].metric("Date Range", f"{total_days} days")
-                cols[2].metric("Storefronts", num_storefronts)
-                cols[3].metric("Preview Query Time", f"{query_duration:.2f} s")
+        st.success("✅ Preview loaded successfully!")
             
-            # --- NÚT EXPORT FULL DATA ---
+        # --- PHẦN TÓM TẮT ---
+        total_rows_estimated = st.session_state.params.get('num_row', 0)
+        num_storefronts = len(st.session_state.params.get('storefront_ids', []))
+        start_date, end_date = datetime.strptime(st.session_state.params['start_date'], '%Y-%m-%d'), datetime.strptime(st.session_state.params['end_date'], '%Y-%m-%d')
+        total_days = (end_date - start_date).days + 1
+        query_duration = st.session_state.get('query_duration', 0)
+
+        with st.expander("📊 **Export Summary**", expanded=True):
+            cols = st.columns(4)
+            cols[0].metric("Total Rows (Estimated)", f"{total_rows_estimated:,}")
+            cols[1].metric("Date Range", f"{total_days} days")
+            cols[2].metric("Storefronts", num_storefronts)
+            cols[3].metric("Preview Query Time", f"{query_duration:.2f} s")
+            
+        cols_action = st.columns(2)
+        with cols_action[0]:
             if st.button("🚀 Export Full Data", use_container_width=True, type="primary"):
                 st.session_state.stage = 'exporting_full'
                 st.rerun()
-
-            st.subheader("Preview data (first 500 rows)")
-            st.data_editor(df_preview, use_container_width=True, height=300)
-
-            # --- NÚT RESET ---
+        with cols_action[1]:
             if st.button("🔄 Start New Export", use_container_width=True):
-                # Xóa các session state liên quan
-                for key in list(st.session_state.keys()):
-                    if key.startswith('ws_id_') or key.startswith('sf_id_'):
-                        del st.session_state[key]
                 st.session_state.stage = 'initial'
                 st.session_state.df_preview = None
                 st.session_state.params = {}
                 st.rerun()
-            if st.button("🔄 Start New Export", use_container_width=True):
-                # Xóa các session state liên quan đến yêu cầu hiện tại
-                st.session_state.stage = 'initial'
-                st.session_state.df_preview = None
-                st.session_state.params = {}
-                # Xóa các giá trị nhập liệu đã lưu để reset form
-                for key in list(st.session_state.keys()):
-                    if key.startswith('ws_id_') or key.startswith('sf_id_'):
-                        del st.session_state[key]
-                st.rerun()
-        else:
-            st.warning("No data to display.")
-            st.session_state.stage = 'initial'
-    
+
+        st.subheader("Preview data (first 500 rows)")
+        st.data_editor(df_preview, use_container_width=True, height=300)
+
+    # Giai đoạn 3: Tải toàn bộ dữ liệu
     elif st.session_state.stage == 'exporting_full':
-        with st.spinner("Exporting full data, please wait..."):
-            full_df = load_data(st.session_state.params.get('data_source')) # Tải toàn bộ dữ liệu
+        with st.spinner("Exporting full data, this may take a while..."):
+            full_df = load_data(st.session_state.params.get('data_source')) # Không có limit
             if full_df is not None:
                 csv_data = convert_df_to_csv(full_df)
                 file_name = f"{st.session_state.params.get('data_source')}_data_{datetime.now().strftime('%Y%m%d')}.csv"
-                # Hiển thị nút download khi đã sẵn sàng
                 st.session_state.download_info = {"data": csv_data, "file_name": file_name}
                 st.session_state.stage = 'download_ready'
                 st.rerun()
 
+    # Giai đoạn 4: Sẵn sàng tải xuống
     elif st.session_state.stage == 'download_ready':
         st.success("✅ Your full data export is ready to download!")
         info = st.session_state.download_info
         st.download_button(
-           label="📥 Download Now",
+           label="📥 Download CSV Now",
            data=info['data'],
            file_name=info['file_name'],
            mime='text/csv',
@@ -152,6 +142,4 @@ def display_data_exporter():
         )
         if st.button("🔄 Start New Export", use_container_width=True):
             st.session_state.stage = 'initial'
-            st.session_state.df_preview = None
-            st.session_state.params = {}
             st.rerun()

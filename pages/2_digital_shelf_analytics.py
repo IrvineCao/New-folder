@@ -1,7 +1,9 @@
 import streamlit as st
 from utils.ui_components import create_input_form, display_data_exporter
 from utils.logic import handle_get_data_button
+from utils.state import initialize_session_state
 
+initialize_session_state()
 # Đặt cấu hình cho trang
 st.set_page_config(page_title="Digital Shelf Analytics", layout="wide")
 st.title("Digital Shelf Analytics")

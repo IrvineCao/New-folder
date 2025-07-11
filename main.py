@@ -1,14 +1,7 @@
 import streamlit as st
+from utils.state import initialize_session_state
 
-# --- App State Initialization ---
-# Giữ lại phần này để đảm bảo trạng thái được duy trì khi chuyển trang
-if 'stage' not in st.session_state:
-    st.session_state.stage = 'initial'
-if 'params' not in st.session_state:
-    st.session_state.params = {}
-if 'df' not in st.session_state:
-    st.session_state.df = None
-
+initialize_session_state()
 
 st.set_page_config(
     page_title="Data Exporter Home",
