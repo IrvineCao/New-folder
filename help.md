@@ -28,6 +28,6 @@
 
 - **Data Integrity**: To maintain data integrity, avoid making changes to the exported file after download, especially when dealing with large or complex datasets.
 - **Performance Tip**: If you consistently export large datasets, consider splitting your exports into smaller time intervals or storefront groups to maintain smoother performance.
-- **Technical Support**: If you encounter issues during the export or with the data file or you want to request a new type of export, please speak directly to **[IrvineCao](https://epsilo.slack.com/archives/D075WP12FJ5)** for assistance.
+- **Technical Support**: If you encounter issues during the export or with the data file or you want to request a new type of export or have a custom request or what ever you want me to do, please speak directly to **[IrvineCao](https://epsilo.slack.com/archives/D075WP12FJ5)** for assistance.
 
 ---

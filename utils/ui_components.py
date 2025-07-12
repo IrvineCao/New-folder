@@ -1,18 +1,18 @@
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta # <-- Sửa lỗi ở dòng này
 from utils.logic import load_data, convert_df_to_csv
+from utils.activity_logger import log_activity
 import time
 
 def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     """
-    Tạo form nhập liệu chuẩn, có thể tùy chọn hiển thị thêm các bộ lọc.
+    Tạo form nhập liệu chuẩn, lưu lại lựa chọn của người dùng.
     """
-    # --- Lưu và tải lại lựa chọn của người dùng ---
     ws_key = f"ws_id_{source_key}"
     sf_key = f"sf_id_{source_key}"
-
+    
     today = datetime.now().date()
-    yesterday = today - timedelta(days=1)
+    yesterday = today - timedelta(days=1) # <-- Lỗi xảy ra ở đây
     date_options = {
         "Last 30 days": {"start": today - timedelta(days=30), "end": yesterday},
         "This month": {"start": today.replace(day=1), "end": yesterday},
@@ -27,10 +27,8 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     with st.container():
         main_cols = st.columns(3)
         with main_cols[0]:
-            # Sử dụng st.session_state để lưu giá trị
             workspace_id = st.text_input("Workspace ID *", st.session_state.get(ws_key, ""), key=ws_key)
         with main_cols[1]:
-            # Sử dụng st.session_state để lưu giá trị
             storefront_input = st.text_input("Storefront EID *", st.session_state.get(sf_key, ""), key=sf_key)
             if len(storefront_input.split(',')) > 1:
                 st.info("💡 Pro-tip: For faster performance, select a smaller date range.")
@@ -63,7 +61,10 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     return workspace_id, storefront_input, start_date, end_date, pfm_options
 
 def display_data_exporter():
-    """Hiển thị toàn bộ luồng xử lý dữ liệu từ preview đến download."""
+    """
+    Hiển thị toàn bộ luồng xử lý dữ liệu từ preview đến download,
+    bao gồm cả việc ghi lại các hành động.
+    """
     
     # Giai đoạn 1: Tải preview (500 dòng)
     if st.session_state.stage == 'loading_preview':
@@ -74,6 +75,8 @@ def display_data_exporter():
                 st.session_state.df_preview = df_preview
                 st.session_state.stage = 'loaded'
             else:
+                # Ghi lại hành động không tìm thấy dữ liệu
+                log_activity(action="PREVIEW_DATA_NOT_FOUND", details=st.session_state.params)
                 st.warning("No data found for the selected criteria.")
                 st.session_state.stage = 'initial'
         st.session_state.query_duration = time.time() - start_time
@@ -87,12 +90,13 @@ def display_data_exporter():
             st.rerun()
 
         st.success("✅ Preview loaded successfully!")
-            
+        
         # --- PHẦN TÓM TẮT ---
         total_rows_estimated = st.session_state.params.get('num_row', 0)
         num_storefronts = len(st.session_state.params.get('storefront_ids', []))
-        start_date, end_date = datetime.strptime(st.session_state.params['start_date'], '%Y-%m-%d'), datetime.strptime(st.session_state.params['end_date'], '%Y-%m-%d')
-        total_days = (end_date - start_date).days + 1
+        start_date_obj = datetime.strptime(st.session_state.params['start_date'], '%Y-%m-%d')
+        end_date_obj = datetime.strptime(st.session_state.params['end_date'], '%Y-%m-%d')
+        total_days = (end_date_obj - start_date_obj).days + 1
         query_duration = st.session_state.get('query_duration', 0)
 
         with st.expander("📊 **Export Summary**", expanded=True):
@@ -105,10 +109,17 @@ def display_data_exporter():
         cols_action = st.columns(2)
         with cols_action[0]:
             if st.button("🚀 Export Full Data", use_container_width=True, type="primary"):
+                # Ghi lại hành động nhấn nút export
+                log_activity(
+                    action="EXPORT_FULL_DATA_CLICK",
+                    details={"data_source": st.session_state.params.get('data_source')}
+                )
                 st.session_state.stage = 'exporting_full'
                 st.rerun()
         with cols_action[1]:
             if st.button("🔄 Start New Export", use_container_width=True):
+                # Ghi lại hành động reset
+                log_activity(action="START_NEW_EXPORT")
                 st.session_state.stage = 'initial'
                 st.session_state.df_preview = None
                 st.session_state.params = {}
@@ -122,6 +133,14 @@ def display_data_exporter():
         with st.spinner("Exporting full data, this may take a while..."):
             full_df = load_data(st.session_state.params.get('data_source')) # Không có limit
             if full_df is not None:
+                # Ghi lại hành động export thành công
+                log_activity(
+                    action="EXPORT_FULL_DATA_SUCCESS",
+                    details={
+                        "data_source": st.session_state.params.get('data_source'),
+                        "rows_exported": len(full_df)
+                    }
+                )
                 csv_data = convert_df_to_csv(full_df)
                 file_name = f"{st.session_state.params.get('data_source')}_data_{datetime.now().strftime('%Y%m%d')}.csv"
                 st.session_state.download_info = {"data": csv_data, "file_name": file_name}
@@ -138,8 +157,12 @@ def display_data_exporter():
            file_name=info['file_name'],
            mime='text/csv',
            use_container_width=True,
-           type="primary"
+           type="primary",
+           # Ghi lại hành động khi nhấn nút download
+           on_click=log_activity,
+           kwargs={"action": "DOWNLOAD_CSV_CLICK", "details": {"file_name": info['file_name']}}
         )
         if st.button("🔄 Start New Export", use_container_width=True):
+            log_activity(action="START_NEW_EXPORT")
             st.session_state.stage = 'initial'
             st.rerun()

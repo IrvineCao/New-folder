@@ -1,10 +1,15 @@
+# utils/logic.py
 import streamlit as st
 import pandas as pd
 from io import StringIO
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from utils.database import get_connection
+from utils.logger import log_error # <-- Import hàm ghi log
 from data_logic import kwl_data, kw_pfm_data, product_tracking_data, pi_data
+from utils.activity_logger import log_activity
+
+# ... (các hàm get_query_by_source, get_data, build_params_for_query, load_data không đổi) ...
 
 def get_query_by_source(data_source: str):
     """Trả về hàm get_query phù hợp dựa trên nguồn dữ liệu."""
@@ -28,26 +33,19 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
     
     params_to_bind = kwargs.copy()
 
-    # === GIẢI PHÁP DỨT ĐIỂM CHO MỆNH ĐỀ IN ===
     # Xử lý mệnh đề IN cho storefront_ids bằng cách định dạng trực tiếp vào chuỗi
     if 'storefront_ids' in params_to_bind and isinstance(params_to_bind['storefront_ids'], (list, tuple)):
         storefront_ids = params_to_bind['storefront_ids']
         
-        # Đảm bảo tất cả các ID là số nguyên để tránh SQL Injection
         safe_ids = [int(sid) for sid in storefront_ids]
         
-        # Chuyển danh sách thành chuỗi, ví dụ: '(123, 456)'
         if len(safe_ids) == 1:
             ids_string = f"({safe_ids[0]})"
         else:
             ids_string = str(tuple(safe_ids))
 
-        # Thay thế placeholder bằng chuỗi đã được định dạng
-        # Áp dụng cho cả hai loại placeholder để đảm bảo tính tương thích
-        base_query_str = base_query_str.replace('__STOREFRONT_IDS_PLACEHOLDER__', ids_string)
         base_query_str = base_query_str.replace(':storefront_ids', ids_string)
-
-        # Xóa khóa cũ khỏi từ điển tham số để không bị truyền hai lần
+        
         del params_to_bind['storefront_ids']
 
     if limit is not None and query_type == 'data':
@@ -60,7 +58,6 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
     with get_connection() as db:
         return pd.read_sql(query, db.connection(), params=params_to_bind)
 
-# --- CÁC HÀM CÒN LẠI KHÔNG THAY ĐỔI ---
 def build_params_for_query(data_source: str, source_params: dict):
     """Xây dựng một từ điển tham số sạch cho câu lệnh SQL."""
     required_params = {
@@ -90,7 +87,10 @@ def load_data(data_source: str, limit: int = None):
         )
         return df
     except Exception as e:
-        st.error(f"An error occurred while loading data: {e}")
+        # Ghi lại lỗi kỹ thuật
+        log_error(e)
+        # Hiển thị thông báo chung cho người dùng
+        st.error("An error occurred while loading data. Please check the Developer Log for details.")
         return None
 
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str, **kwargs):
@@ -110,10 +110,10 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         **kwargs
     }
 
+    # --- CẬP NHẬT KHỐI TRY...EXCEPT ---
     try:
         with st.spinner("Checking data size..."):
             params_for_count = build_params_for_query(data_source, st.session_state.params)
-            
             num_row_df = get_data('count', data_source, **params_for_count)
             num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
             st.session_state.params['num_row'] = num_row
@@ -127,16 +127,20 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         else:
             st.session_state.stage = 'loading_preview'
 
-    except OperationalError:
-        st.error("❌ Database Connection Error. Please contact the administrator.")
+    except OperationalError as e:
+        log_error(e)
+        st.error("❌ Database Connection Error. Please contact an administrator.")
         st.session_state.stage = 'initial'
     except ProgrammingError as e:
-        st.error(f"❌ SQL Error. The query could not be executed. Details: {e}")
+        log_error(e)
+        st.error("❌ An error occurred with the data query. Please contact an administrator.")
         st.session_state.stage = 'initial'
     except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
+        log_error(e)
+        st.error("❌ An unexpected error occurred. Please contact an administrator.")
         st.session_state.stage = 'initial'
 
+# ... (các hàm còn lại không đổi) ...
 def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source, **kwargs):
     """Hàm xử lý sự kiện khi nhấn nút 'Get Data'."""
     if st.session_state.params.get('data_source') != data_source:
@@ -144,6 +148,19 @@ def handle_get_data_button(workspace_id, storefront_input, start_date, end_date,
         st.session_state.params = {}
         st.session_state.df_preview = None
 
+    # Ghi lại hành động yêu cầu preview
+    log_activity(
+        action="PREVIEW_DATA_REQUEST",
+        details={
+            "data_source": data_source,
+            "workspace_id": workspace_id,
+            "storefronts": storefront_input,
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d'),
+            **kwargs
+        }
+    )
+    
     handle_export_process(
         workspace_id,
         storefront_input,
