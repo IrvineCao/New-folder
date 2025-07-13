@@ -92,6 +92,7 @@ with col3:
             <p>With one click, export the complete dataset and download it as a clean, ready-to-use CSV file.</p>
         </div>
     """, unsafe_allow_html=True)
+
 st.divider()
 st.subheader("Available Data Exports")
 with st.expander("📈 **Keyword Lab**", expanded=True):
@@ -108,7 +109,8 @@ with st.expander("📈 **Digital Shelf Analytics**", expanded=True):
 st.info("👈 **Ready to start?** Select a report from the navigation menu on the left to begin your first export!", icon="🎉")
 
 
-# --- PHẦN DÀNH CHO NHÀ PHÁT TRIỂN (QUAY LẠI DÙNG MẬT KHẨU) ---
+
+# --- PHẦN DÀNH CHO NHÀ PHÁT TRIỂN ---
 st.sidebar.markdown("---")
 # Bạn có thể thay đổi mã bí mật này
 SECRET_CODE = "irvine"

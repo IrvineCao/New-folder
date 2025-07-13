@@ -8,8 +8,8 @@ from utils.database import get_connection
 from utils.logger import log_error # <-- Import hàm ghi log
 from data_logic import kwl_data, kw_pfm_data, product_tracking_data, pi_data
 from utils.activity_logger import log_activity
+from utils.messaging import display_user_message
 
-# ... (các hàm get_query_by_source, get_data, build_params_for_query, load_data không đổi) ...
 
 def get_query_by_source(data_source: str):
     """Trả về hàm get_query phù hợp dựa trên nguồn dữ liệu."""
@@ -118,11 +118,18 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
             num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
             st.session_state.params['num_row'] = num_row
 
+        # --- THAY ĐỔI CÁCH XỬ LÝ LỖI VÀ CẢNH BÁO ---
         if num_row == 0:
-            st.warning("No data found for the selected criteria.")
+            st.session_state.user_message = {
+                "type": "warning",
+                "text": "No data found for the selected criteria."
+            }
             st.session_state.stage = 'initial'
         elif num_row > 50000:
-            st.error(f"Data is too large to export ({num_row:,} rows). Please narrow your selection.")
+            st.session_state.user_message = {
+                "type": "error",
+                "text": f"Data is too large to export ({num_row:,} rows). Please narrow your selection."
+            }
             st.session_state.stage = 'initial'
         else:
             st.session_state.stage = 'loading_preview'
@@ -143,24 +150,14 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
 # ... (các hàm còn lại không đổi) ...
 def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source, **kwargs):
     """Hàm xử lý sự kiện khi nhấn nút 'Get Data'."""
+    # Xóa thông báo cũ trước khi bắt đầu một hành động mới
+    st.session_state.user_message = None
+
     if st.session_state.params.get('data_source') != data_source:
         st.session_state.stage = 'initial'
         st.session_state.params = {}
         st.session_state.df_preview = None
 
-    # Ghi lại hành động yêu cầu preview
-    log_activity(
-        action="PREVIEW_DATA_REQUEST",
-        details={
-            "data_source": data_source,
-            "workspace_id": workspace_id,
-            "storefronts": storefront_input,
-            "start_date": start_date.strftime('%Y-%m-%d'),
-            "end_date": end_date.strftime('%Y-%m-%d'),
-            **kwargs
-        }
-    )
-    
     handle_export_process(
         workspace_id,
         storefront_input,

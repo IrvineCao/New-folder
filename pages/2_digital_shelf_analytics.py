@@ -2,8 +2,12 @@ import streamlit as st
 from utils.ui_components import create_input_form, display_data_exporter
 from utils.logic import handle_get_data_button
 from utils.state import initialize_session_state
+from utils.messaging import display_user_message # <-- Import hàm mới
 
 initialize_session_state()
+
+# --- HIỂN THỊ THÔNG BÁO NGAY TẠI ĐÂY ---
+display_user_message()
 
 # --- KIỂM TRA ĐĂNG NHẬP ---
 if not st.session_state.get('username'):
@@ -15,6 +19,7 @@ st.title("Digital Shelf Analytics")
 
 tab1, tab2, tab3 = st.tabs(["Keyword Performance", "Product Tracking", "Competition Landscape"])
 
+# Keyword Performance
 with tab1:
     DATA_SOURCE_KEY = 'kw_pfm'
     st.header("Keyword Performance Data Export")
@@ -38,6 +43,7 @@ with tab1:
     if st.session_state.params.get('data_source') == DATA_SOURCE_KEY and st.session_state.stage != 'initial':
         display_data_exporter()
 
+# Product Tracking
 with tab2:
     DATA_SOURCE_KEY = 'pt'
     st.header("Product Tracking Data Export")
@@ -56,6 +62,7 @@ with tab2:
     if st.session_state.params.get('data_source') == DATA_SOURCE_KEY and st.session_state.stage != 'initial':
         display_data_exporter()
 
+# Competition Landscape
 with tab3:
     st.header("Competition Landscape Data Export")
     st.write("Coming soon...")

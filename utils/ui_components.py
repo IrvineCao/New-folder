@@ -1,9 +1,10 @@
 import streamlit as st
-from datetime import datetime, timedelta # <-- Sửa lỗi ở dòng này
+from datetime import datetime, timedelta
 from utils.logic import load_data, convert_df_to_csv
 from utils.activity_logger import log_activity
 import time
 
+# --- Tạo form nhập liệu chuẩn, lưu lại lựa chọn của người dùng ---
 def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     """
     Tạo form nhập liệu chuẩn, lưu lại lựa chọn của người dùng.
@@ -12,7 +13,7 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     sf_key = f"sf_id_{source_key}"
     
     today = datetime.now().date()
-    yesterday = today - timedelta(days=1) # <-- Lỗi xảy ra ở đây
+    yesterday = today - timedelta(days=1)
     date_options = {
         "Last 30 days": {"start": today - timedelta(days=30), "end": yesterday},
         "This month": {"start": today.replace(day=1), "end": yesterday},
@@ -60,13 +61,14 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     st.write("---")
     return workspace_id, storefront_input, start_date, end_date, pfm_options
 
+
+# --- Hiển thị toàn bộ luồng xử lý dữ liệu từ preview đến download ---
 def display_data_exporter():
     """
-    Hiển thị toàn bộ luồng xử lý dữ liệu từ preview đến download,
-    bao gồm cả việc ghi lại các hành động.
+    Hiển thị toàn bộ luồng xử lý dữ liệu từ preview đến download.
     """
     
-    # Giai đoạn 1: Tải preview (500 dòng)
+    # Giai đoạn 1: Tải preview
     if st.session_state.stage == 'loading_preview':
         start_time = time.time()
         with st.spinner("Loading preview (500 rows)..."):
@@ -75,14 +77,13 @@ def display_data_exporter():
                 st.session_state.df_preview = df_preview
                 st.session_state.stage = 'loaded'
             else:
-                # Ghi lại hành động không tìm thấy dữ liệu
                 log_activity(action="PREVIEW_DATA_NOT_FOUND", details=st.session_state.params)
                 st.warning("No data found for the selected criteria.")
                 st.session_state.stage = 'initial'
         st.session_state.query_duration = time.time() - start_time
         st.rerun()
     
-    # Giai đoạn 2: Hiển thị preview và các tùy chọn
+    # Giai đoạn 2: Hiển thị kết quả
     elif st.session_state.stage == 'loaded':
         df_preview = st.session_state.get('df_preview')
         if df_preview is None:
@@ -91,34 +92,32 @@ def display_data_exporter():
 
         st.success("✅ Preview loaded successfully!")
         
-        # --- PHẦN TÓM TẮT ---
-        total_rows_estimated = st.session_state.params.get('num_row', 0)
-        num_storefronts = len(st.session_state.params.get('storefront_ids', []))
-        start_date_obj = datetime.strptime(st.session_state.params['start_date'], '%Y-%m-%d')
-        end_date_obj = datetime.strptime(st.session_state.params['end_date'], '%Y-%m-%d')
-        total_days = (end_date_obj - start_date_obj).days + 1
-        query_duration = st.session_state.get('query_duration', 0)
+        with st.expander("**Summary (from Preview)**", expanded=True):
+            params = st.session_state.get('params', {})
+            total_rows_estimated = params.get('num_row', 0)
+            num_storefronts = len(params.get('storefront_ids', []))
+            start_date_obj = datetime.strptime(params['start_date'], '%Y-%m-%d')
+            end_date_obj = datetime.strptime(params['end_date'], '%Y-%m-%d')
+            total_days = (end_date_obj - start_date_obj).days + 1
+            query_duration = st.session_state.get('query_duration', 0)
 
-        with st.expander("📊 **Export Summary**", expanded=True):
-            cols = st.columns(4)
+            cols = st.columns(5)
             cols[0].metric("Total Rows (Estimated)", f"{total_rows_estimated:,}")
-            cols[1].metric("Date Range", f"{total_days} days")
-            cols[2].metric("Storefronts", num_storefronts)
-            cols[3].metric("Preview Query Time", f"{query_duration:.2f} s")
+            cols[1].metric("Total Columns", len(df_preview.columns))
+            cols[2].metric("Date Range", f"{total_days} days")
+            cols[3].metric("Storefronts", num_storefronts)
+            cols[4].metric("Preview Query Time", f"{query_duration:.2f} s")
             
+        st.markdown("---")
+        # --- Các nút hành động ---
         cols_action = st.columns(2)
         with cols_action[0]:
             if st.button("🚀 Export Full Data", use_container_width=True, type="primary"):
-                # Ghi lại hành động nhấn nút export
-                log_activity(
-                    action="EXPORT_FULL_DATA_CLICK",
-                    details={"data_source": st.session_state.params.get('data_source')}
-                )
+                log_activity(action="EXPORT_FULL_DATA_CLICK", details={"data_source": st.session_state.params.get('data_source')})
                 st.session_state.stage = 'exporting_full'
                 st.rerun()
         with cols_action[1]:
             if st.button("🔄 Start New Export", use_container_width=True):
-                # Ghi lại hành động reset
                 log_activity(action="START_NEW_EXPORT")
                 st.session_state.stage = 'initial'
                 st.session_state.df_preview = None
@@ -128,26 +127,19 @@ def display_data_exporter():
         st.subheader("Preview data (first 500 rows)")
         st.data_editor(df_preview, use_container_width=True, height=300)
 
-    # Giai đoạn 3: Tải toàn bộ dữ liệu
+    # Giai đoạn 3: Export toàn bộ dữ liệu
     elif st.session_state.stage == 'exporting_full':
         with st.spinner("Exporting full data, this may take a while..."):
-            full_df = load_data(st.session_state.params.get('data_source')) # Không có limit
+            full_df = load_data(st.session_state.params.get('data_source'))
             if full_df is not None:
-                # Ghi lại hành động export thành công
-                log_activity(
-                    action="EXPORT_FULL_DATA_SUCCESS",
-                    details={
-                        "data_source": st.session_state.params.get('data_source'),
-                        "rows_exported": len(full_df)
-                    }
-                )
+                log_activity(action="EXPORT_FULL_DATA_SUCCESS", details={"data_source": st.session_state.params.get('data_source'), "rows_exported": len(full_df)})
                 csv_data = convert_df_to_csv(full_df)
                 file_name = f"{st.session_state.params.get('data_source')}_data_{datetime.now().strftime('%Y%m%d')}.csv"
                 st.session_state.download_info = {"data": csv_data, "file_name": file_name}
                 st.session_state.stage = 'download_ready'
                 st.rerun()
 
-    # Giai đoạn 4: Sẵn sàng tải xuống
+    # Giai đoạn 4: Tải xuống
     elif st.session_state.stage == 'download_ready':
         st.success("✅ Your full data export is ready to download!")
         info = st.session_state.download_info
@@ -158,7 +150,6 @@ def display_data_exporter():
            mime='text/csv',
            use_container_width=True,
            type="primary",
-           # Ghi lại hành động khi nhấn nút download
            on_click=log_activity,
            kwargs={"action": "DOWNLOAD_CSV_CLICK", "details": {"file_name": info['file_name']}}
         )
