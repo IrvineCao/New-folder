@@ -1,0 +1,19 @@
+# Bỏ qua môi trường ảo của Python
+venv
+.venv
+
+# Bỏ qua các tệp cache của Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Bỏ qua các tệp cấu hình của IDE
+.vscode/
+.idea/
+
+# Quan trọng: Bỏ qua tệp chứa các biến môi trường nhạy cảm
+.env
+
+*.log
+activity_log.csv
+CodeFlow.mmd
