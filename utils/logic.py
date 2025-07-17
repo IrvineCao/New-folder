@@ -1,13 +1,10 @@
-# utils/logic.py
 import streamlit as st
 import pandas as pd
 from io import StringIO
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from utils.database import get_connection
-from utils.logger import log_error # <-- Import hàm ghi log
 from data_logic import kwl_data, kw_pfm_data, product_tracking_data, pi_data
-from utils.activity_logger import log_activity
 from utils.messaging import display_user_message
 
 
@@ -87,8 +84,6 @@ def load_data(data_source: str, limit: int = None):
         )
         return df
     except Exception as e:
-        # Ghi lại lỗi kỹ thuật
-        log_error(e)
         # Hiển thị thông báo chung cho người dùng
         st.error("An error occurred while loading data. Please check the Developer Log for details.")
         return None
@@ -135,15 +130,12 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
             st.session_state.stage = 'loading_preview'
 
     except OperationalError as e:
-        log_error(e)
         st.error("❌ Database Connection Error. Please contact an administrator.")
         st.session_state.stage = 'initial'
     except ProgrammingError as e:
-        log_error(e)
         st.error("❌ An error occurred with the data query. Please contact an administrator.")
         st.session_state.stage = 'initial'
     except Exception as e:
-        log_error(e)
         st.error("❌ An unexpected error occurred. Please contact an administrator.")
         st.session_state.stage = 'initial'
 

@@ -1,25 +1,19 @@
+from pathlib import Path
+
+def _get_query_from_file(file_path: str) -> str:
+    """Helper function to read SQL file safely."""
+    path = Path(__file__).parent / "sql" / file_path
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "" 
+
 query_params = {
-    "count": """
-
-    """,
-    "data": """
-
-    """
+    "count": _get_query_from_file("pi_count.sql"),
+    "data": _get_query_from_file("pi_data.sql"),
 }
 
-def get_query(query_name, storefront_placeholders, tag_placeholders):
-    """
-    Get a query by name and format it with storefront and tag placeholders
-    
-    Args:
-        query_name (str): Name of the query to retrieve ('count' or 'data')
-        storefront_placeholders (str): Placeholder string for storefront IDs (e.g., '%s, %s')
-        tag_placeholders (str): Placeholder string for tags (e.g., '%s, %s')
-        
-    Returns:
-        str: Formatted SQL query
-    """
-    return query_params[query_name].format(
-        storefront_placeholders=storefront_placeholders,
-        tag_placeholders=tag_placeholders
-    )
+def get_query(query_name: str) -> str:
+    """Gets a query by name from the pre-loaded dictionary."""
+    return query_params.get(query_name, "")

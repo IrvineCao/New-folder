@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Tải các biến môi trường từ tệp .env
 load_dotenv() 
 
-# Lấy thông tin cấu hình TRỰC TIẾP từ biến môi trường
+# Lấy thông tin cấu hình từ biến môi trường
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
@@ -18,9 +18,7 @@ DB_NAME = os.getenv("DB_NAME")
 
 # Kiểm tra xem các biến có tồn tại không
 if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
-    # Sử dụng st.error để hiển thị thông báo lỗi trên giao diện
     st.error("Lỗi cấu hình CSDL: Một hoặc nhiều biến môi trường bị thiếu. Hãy kiểm tra lại tệp .env của bạn.")
-    # Dừng ứng dụng nếu thiếu cấu hình
     st.stop()
 
 # Xây dựng URL kết nối CSDL

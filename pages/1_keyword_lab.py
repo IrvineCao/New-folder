@@ -5,17 +5,10 @@ from utils.state import initialize_session_state
 from utils.messaging import display_user_message 
 
 initialize_session_state()
-
-# --- KIỂM TRA ĐĂNG NHẬP ---
-if not st.session_state.get('username'):
-    st.warning("Please enter your name in the sidebar to start a session.")
-    st.stop()
+display_user_message()
 
 st.set_page_config(page_title="Keyword Lab", layout="wide")
 st.title("Keyword Level Data Export")
-
-# --- HIỂN THỊ THÔNG BÁO NGAY TẠI ĐÂY ---
-display_user_message()
 
 DATA_SOURCE_KEY = 'kwl'
 

@@ -22,13 +22,6 @@ def initialize_session_state():
     if 'username' not in st.session_state:
         st.session_state.username = None
 
-    # --- BIẾN MỚI CHO VIỆC GHI LOG ---
-    if 'dev_logs' not in st.session_state:
-        st.session_state.dev_logs = []
-    # Cờ để kiểm tra xem chế độ nhà phát triển đã được kích hoạt chưa
-    if 'dev_mode_activated' not in st.session_state:
-        st.session_state.dev_mode_activated = False
-
     # --- BIẾN MỚI CHO THÔNG BÁO NGƯỜI DÙNG ---
     if 'user_message' not in st.session_state:
         st.session_state.user_message = None

@@ -5,14 +5,8 @@ from utils.state import initialize_session_state
 from utils.messaging import display_user_message # <-- Import hàm mới
 
 initialize_session_state()
-
-# --- HIỂN THỊ THÔNG BÁO NGAY TẠI ĐÂY ---
 display_user_message()
 
-# --- KIỂM TRA ĐĂNG NHẬP ---
-if not st.session_state.get('username'):
-    st.warning("Please enter your name in the sidebar to start a session.")
-    st.stop() # Dừng thực thi trang nếu chưa đăng nhập
 
 st.set_page_config(page_title="Digital Shelf Analytics", layout="wide")
 st.title("Digital Shelf Analytics")

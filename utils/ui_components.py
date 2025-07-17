@@ -1,7 +1,6 @@
 import streamlit as st
 from datetime import datetime, timedelta
 from utils.logic import load_data, convert_df_to_csv
-from utils.activity_logger import log_activity
 import time
 
 # --- Tạo form nhập liệu chuẩn, lưu lại lựa chọn của người dùng ---
@@ -77,7 +76,6 @@ def display_data_exporter():
                 st.session_state.df_preview = df_preview
                 st.session_state.stage = 'loaded'
             else:
-                log_activity(action="PREVIEW_DATA_NOT_FOUND", details=st.session_state.params)
                 st.warning("No data found for the selected criteria.")
                 st.session_state.stage = 'initial'
         st.session_state.query_duration = time.time() - start_time
@@ -113,12 +111,10 @@ def display_data_exporter():
         cols_action = st.columns(2)
         with cols_action[0]:
             if st.button("🚀 Export Full Data", use_container_width=True, type="primary"):
-                log_activity(action="EXPORT_FULL_DATA_CLICK", details={"data_source": st.session_state.params.get('data_source')})
                 st.session_state.stage = 'exporting_full'
                 st.rerun()
         with cols_action[1]:
             if st.button("🔄 Start New Export", use_container_width=True):
-                log_activity(action="START_NEW_EXPORT")
                 st.session_state.stage = 'initial'
                 st.session_state.df_preview = None
                 st.session_state.params = {}
@@ -132,7 +128,6 @@ def display_data_exporter():
         with st.spinner("Exporting full data, this may take a while..."):
             full_df = load_data(st.session_state.params.get('data_source'))
             if full_df is not None:
-                log_activity(action="EXPORT_FULL_DATA_SUCCESS", details={"data_source": st.session_state.params.get('data_source'), "rows_exported": len(full_df)})
                 csv_data = convert_df_to_csv(full_df)
                 file_name = f"{st.session_state.params.get('data_source')}_data_{datetime.now().strftime('%Y%m%d')}.csv"
                 st.session_state.download_info = {"data": csv_data, "file_name": file_name}
@@ -150,10 +145,7 @@ def display_data_exporter():
            mime='text/csv',
            use_container_width=True,
            type="primary",
-           on_click=log_activity,
-           kwargs={"action": "DOWNLOAD_CSV_CLICK", "details": {"file_name": info['file_name']}}
         )
         if st.button("🔄 Start New Export", use_container_width=True):
-            log_activity(action="START_NEW_EXPORT")
             st.session_state.stage = 'initial'
             st.rerun()
