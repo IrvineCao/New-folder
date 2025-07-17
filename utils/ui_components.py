@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from utils.logic import load_data, convert_df_to_csv
 import time
 
-# --- Tạo form nhập liệu chuẩn, lưu lại lựa chọn của người dùng ---
+# --- Tạo form nhập liệu + lưu lại lựa chọn của người dùng ---
 def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
     """
     Tạo form nhập liệu chuẩn, lưu lại lựa chọn của người dùng.

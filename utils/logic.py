@@ -5,7 +5,6 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from utils.database import get_connection
 from data_logic import kwl_data, kw_pfm_data, product_tracking_data, pi_data
-from utils.messaging import display_user_message
 
 
 def get_query_by_source(data_source: str):
@@ -20,10 +19,11 @@ def get_query_by_source(data_source: str):
         return query_map[data_source]
     raise ValueError(f"Unknown data source: {data_source}")
 
+
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
 def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
     """
-    Lấy dữ liệu từ CSDL, xử lý mệnh đề IN một cách thủ công để đảm bảo cú pháp đúng.
+    Lấy data từ DB
     """
     get_query_func = get_query_by_source(data_source)
     base_query_str = get_query_func(query_type)
@@ -56,26 +56,26 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
         return pd.read_sql(query, db.connection(), params=params_to_bind)
 
 def build_params_for_query(data_source: str, source_params: dict):
-    """Xây dựng một từ điển tham số sạch cho câu lệnh SQL."""
+    """Xây dựng tham số cho câu lệnh SQL."""
     required_params = {
         "workspace_id": source_params.get("workspace_id"),
         "storefront_ids": source_params.get("storefront_ids"),
         "start_date": source_params.get("start_date"),
         "end_date": source_params.get("end_date"),
     }
-    
     if data_source == 'kw_pfm':
         required_params["device_type"] = source_params.get("device_type")
         required_params["display_type"] = source_params.get("display_type")
-        required_params["product_position"] = source_params.get("product_position")
-        
+    required_params["product_position"] = source_params.get("product_position")
+    
     return required_params
 
 def load_data(data_source: str, limit: int = None):
     """Tải dữ liệu dựa trên các tham số trong session state."""
+    
     try:
         params_for_load = build_params_for_query(data_source, st.session_state.get('params', {}))
-        
+
         df = get_data(
             query_type='data', 
             data_source=data_source, 
@@ -83,10 +83,10 @@ def load_data(data_source: str, limit: int = None):
             **params_for_load
         )
         return df
-    except Exception as e:
-        # Hiển thị thông báo chung cho người dùng
-        st.error("An error occurred while loading data. Please check the Developer Log for details.")
+    except Exception:
+        st.error("An error occurred while loading data.")
         return None
+
 
 def handle_export_process(workspace_id, storefront_input, start_date, end_date, data_source: str, **kwargs):
     """Xử lý toàn bộ quy trình: xác thực, đếm số dòng, và cập nhật trạng thái."""
@@ -95,6 +95,12 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         for error in errors:
             st.error(error)
         st.stop()
+    
+    def process_storefront_input(storefront_input):
+        try:
+            return [int(eid.strip()) for eid in storefront_input.split(',')]
+        except ValueError:
+            return None
     
     st.session_state.params = {
         "workspace_id": int(workspace_id),
@@ -105,7 +111,6 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         **kwargs
     }
 
-    # --- CẬP NHẬT KHỐI TRY...EXCEPT ---
     try:
         with st.spinner("Checking data size..."):
             params_for_count = build_params_for_query(data_source, st.session_state.params)
@@ -129,17 +134,17 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
         else:
             st.session_state.stage = 'loading_preview'
 
-    except OperationalError as e:
-        st.error("❌ Database Connection Error. Please contact an administrator.")
+    except OperationalError:
+        st.error("❌ Database Connection Error.")
         st.session_state.stage = 'initial'
-    except ProgrammingError as e:
-        st.error("❌ An error occurred with the data query. Please contact an administrator.")
+    except ProgrammingError:
+        st.error("❌ An error occurred with the data query.")
         st.session_state.stage = 'initial'
-    except Exception as e:
-        st.error("❌ An unexpected error occurred. Please contact an administrator.")
+    except Exception:
+        st.error("❌ An unexpected error occurred.")
         st.session_state.stage = 'initial'
 
-# ... (các hàm còn lại không đổi) ...
+
 def handle_get_data_button(workspace_id, storefront_input, start_date, end_date, data_source, **kwargs):
     """Hàm xử lý sự kiện khi nhấn nút 'Get Data'."""
     # Xóa thông báo cũ trước khi bắt đầu một hành động mới
@@ -159,6 +164,7 @@ def handle_get_data_button(workspace_id, storefront_input, start_date, end_date,
         **kwargs
     )
     st.rerun()
+
 
 def validate_inputs(workspace_id, storefront_input, start_date, end_date):
     errors = []
@@ -197,12 +203,6 @@ def validate_inputs(workspace_id, storefront_input, start_date, end_date):
         errors.append("Start date cannot be after end date.")
     return errors
 
-
-def process_storefront_input(storefront_input):
-    try:
-        return [int(eid.strip()) for eid in storefront_input.split(',')]
-    except ValueError:
-        return None
 
 def convert_df_to_csv(df: pd.DataFrame):
     output = StringIO()

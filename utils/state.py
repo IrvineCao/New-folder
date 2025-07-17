@@ -18,10 +18,6 @@ def initialize_session_state():
     if 'download_info' not in st.session_state:
         st.session_state.download_info = {}
 
-    # Biến để lưu trữ thông tin người dùng
-    if 'username' not in st.session_state:
-        st.session_state.username = None
-
     # --- BIẾN MỚI CHO THÔNG BÁO NGƯỜI DÙNG ---
     if 'user_message' not in st.session_state:
         st.session_state.user_message = None
