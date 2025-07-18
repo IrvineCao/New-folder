@@ -108,7 +108,6 @@ st.markdown("#### **Step 4: Secure the Bag (Download)**")
 st.markdown(
     "When the export is complete, the glorious **'Download CSV Now'** button will appear. Click it. The data is yours. You've done it. You're a data champion."
 )
-st.image("download.jpg")
 st.divider()
 
 
