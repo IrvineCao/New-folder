@@ -45,7 +45,7 @@ from kw_discovery_storefront_keyword
             on kw_discovery_storefront_keyword.storefront_id = kw_discovery_storefront_workspace.storefront_id
 where workspace_id = :workspace_id
 and created_datetime between :start_date and :end_date
-and ads_ops_storefront_id in :storefront_ids
+and (:storefront_ids is NULL or ads_ops_storefront_id in :storefront_ids)
 and est_daily_search_volume > 0
 and kw_discovery_storefront_keyword.keyword_type != 'irrelevant'
 group by kw_discovery_storefront_keyword.keyword_id, kw_discovery_storefront_keyword.storefront_id,

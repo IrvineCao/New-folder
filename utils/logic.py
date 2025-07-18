@@ -42,7 +42,6 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
             ids_string = str(tuple(safe_ids))
 
         base_query_str = base_query_str.replace(':storefront_ids', ids_string)
-        
         del params_to_bind['storefront_ids']
 
     if limit is not None and query_type == 'data':
@@ -51,9 +50,9 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
         final_query_str = base_query_str
     
     query = text(final_query_str)
-    
     with get_connection() as db:
         return pd.read_sql(query, db.connection(), params=params_to_bind)
+
 
 def build_params_for_query(data_source: str, source_params: dict):
     """Xây dựng tham số cho câu lệnh SQL."""
@@ -69,6 +68,7 @@ def build_params_for_query(data_source: str, source_params: dict):
     required_params["product_position"] = source_params.get("product_position")
     
     return required_params
+
 
 def load_data(data_source: str, limit: int = None):
     """Tải dữ liệu dựa trên các tham số trong session state."""
@@ -177,21 +177,12 @@ def validate_inputs(workspace_id, storefront_input, start_date, end_date):
         errors.append("Workspace ID must be numeric.")
 
     storefront_input_list = [s.strip() for s in storefront_input.split(",") if s.strip()]
-    if not storefront_input_list:
-        errors.append("Storefront EID is required")
-    elif len(storefront_input_list) > 5:
-        errors.append("You can only enter up to 5 storefront IDs.")
-    elif not all(s.isdigit() for s in storefront_input_list):
+    if not all(s.isdigit() for s in storefront_input_list):
         errors.append("Storefront EID must be numeric.")
     
     num_storefronts = len(storefront_input_list)
     date_range_days = (end_date - start_date).days
     max_days_allowed = 60
-
-    if num_storefronts > 1 and num_storefronts <= 2:
-        max_days_allowed = 60
-    elif num_storefronts > 2:
-        max_days_allowed = 30
 
     if date_range_days > max_days_allowed:
         errors.append(

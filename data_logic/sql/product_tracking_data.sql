@@ -63,7 +63,7 @@ WITH main_query AS (
     WHERE
         (true)
         AND (
-            storefront.ads_ops_storefront_id IN :storefront_ids
+            (:storefront_ids is NULL or storefront.ads_ops_storefront_id IN :storefront_ids)
             and workspace.id = :workspace_id
         )
     GROUP BY

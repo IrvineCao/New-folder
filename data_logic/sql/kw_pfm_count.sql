@@ -21,7 +21,7 @@ WITH dim_data AS (
 	  JOIN onsite_keyword_workspace_tag kw_ws_tag ON kw_ws_tag.keyword_workspace_id = kw_ws.id
 	  LEFT JOIN onsite_workspace_tag ws_tag ON ws_tag.id = kw_ws_tag.workspace_tag_id
 	WHERE true
-	  AND sf.ads_ops_storefront_id IN :storefront_ids
+	  AND (:storefront_ids is NULL or sf.ads_ops_storefront_id IN :storefront_ids)
 	  AND ws.id = :workspace_id
 )
 

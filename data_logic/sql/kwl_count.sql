@@ -9,7 +9,7 @@ from kw_discovery_storefront_keyword
         join kw_discovery_storefront_workspace
             on kw_discovery_storefront_keyword.storefront_id = kw_discovery_storefront_workspace.storefront_id
 where workspace_id = :workspace_id
-and ads_ops_storefront_id in :storefront_ids
+and (:storefront_ids is NULL or ads_ops_storefront_id in :storefront_ids)
 and created_datetime between :start_date and :end_date
 and est_daily_search_volume > 0
 and kw_discovery_storefront_keyword.keyword_type != 'irrelevant'

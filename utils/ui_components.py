@@ -51,11 +51,11 @@ def create_input_form(source_key: str, show_kw_pfm_options: bool = False):
             st.write("Additional options:")
             extra_cols = st.columns(3)
             with extra_cols[0]:
-                pfm_options['device_type'] = st.selectbox("Device Type", ('Mobile', 'Desktop'), key=f'device_type_{source_key}')
+                pfm_options['device_type'] = st.selectbox("Device Type", ('Mobile', 'Desktop', 'None'), key=f'device_type_{source_key}')
             with extra_cols[1]:
-                pfm_options['display_type'] = st.selectbox("Display Type", ('Paid', 'Organic','Top'), key=f'display_type_{source_key}')
+                pfm_options['display_type'] = st.selectbox("Display Type", ('Paid', 'Organic','Top','None'), key=f'display_type_{source_key}')
             with extra_cols[2]:
-                pfm_options['product_position'] = st.selectbox("Product Position", ('-1','4','10'), key=f'product_pos_{source_key}')
+                pfm_options['product_position'] = st.selectbox("Product Position", ('-1','4','10','None'), key=f'product_pos_{source_key}')
 
     st.write("---")
     return workspace_id, storefront_input, start_date, end_date, pfm_options
