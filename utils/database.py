@@ -6,28 +6,28 @@ from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
 from dotenv import load_dotenv
 
-# Tải các biến môi trường từ tệp .env
-load_dotenv() 
+# Load environment variables from the .env file
+load_dotenv()
 
-# Lấy thông tin cấu hình từ biến môi trường
+# Get database configuration from environment variables
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 
-# Kiểm tra xem các biến có tồn tại không
+# Check if all variables exist
 if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
-    st.error("Lỗi cấu hình CSDL: Một hoặc nhiều biến môi trường bị thiếu. Hãy kiểm tra lại tệp .env của bạn.")
+    st.error("Database configuration error: One or more environment variables are missing. Please check your .env file.")
     st.stop()
 
-# Xây dựng URL kết nối CSDL
+# Build the database connection URL
 SQLALCHEMY_DATABASE_URL = (
     f"singlestoredb://{DB_USER}:{DB_PASSWORD}@"
     f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
-# Tạo SQLAlchemy engine
+# Create the SQLAlchemy engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     poolclass=QueuePool,

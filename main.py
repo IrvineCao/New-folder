@@ -3,7 +3,7 @@ from utils.state import initialize_session_state
 
 initialize_session_state()
 
-# Cấu hình trang: Thiết lập giao diện và cảm xúc chung
+# Page Configuration: Set the look and feel
 st.set_page_config(
     page_title="Data Export | No More Waiting",
     page_icon="🔥",
@@ -11,14 +11,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS tùy chỉnh: Nâng cấp giao diện ---
+# --- Custom CSS: Enhance the Look ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
         body {
             font-family: 'Inter', sans-serif;
-            color: #e0e0e0; /* Thêm màu chữ mặc định cho dễ đọc hơn */
+            color: #e0e0e0; /* Add a default font color for better readability */
         }
 
         /* Hide the default Streamlit header and footer */
@@ -109,33 +109,31 @@ st.markdown("""
         </style>
 """, unsafe_allow_html=True)
 
-# --- Nội dung chính ---
+# --- Main Content ---
 
-# Phần tiêu đề
+# Header Section
 st.markdown("<h1 class='main-title'>Data Export | No More Waiting</h1>", unsafe_allow_html=True)
 st.markdown("<div class='sub-header'>The self-service data tool built out of pure necessity.</div>", unsafe_allow_html=True)
 
-# Câu chuyện về Irvine (bạn thích phần này)
+# The Irvine Story (you'll like this part)
 st.markdown("""
-<div class='rant-box'>
-    <p>
-        Tired of having the perfect query, but nowhere to run it? <br>
-        Tired of needing data but having to wait for <strong>Irvine</strong> to export it? <br>
-        Let's be real, <strong>Irvine is tired of exporting data, too.</strong>
-    </p>
-    <p>
-        So, he built this. A new export solution so you can stop waiting and start doing. Pull data directly from your laptop, PC, phone—whatever. This tool is fast, convenient, and the design is very human.
-    </p>
-    <p>
-        All you do is fill in the fields, hit preview, and smash export. You get fresh, clean data with full columns and rows, perfectly formatted. No waiting, no begging, no knowing SQL.
-    </p>
-</div>
+    <div class='rant-box'>
+        <p>
+            Tired of having the perfect query, but nowhere to run it? <br>
+            Tired of needing data but having to wait for <strong>Irvine</strong> to export it? <br>
+            Let's be real, <strong>Irvine is tired of exporting data, too.</strong>
+        </p>
+        <p>
+            So, he built this. A new export solution so you can stop waiting and start doing. Pull data directly from your laptop, PC, phone—whatever. This tool is fast, convenient, and the design is very human.
+        </p>
+        <p>
+            All you do is fill in the fields, hit preview, and smash export. You get fresh, clean data with full columns and rows, perfectly formatted. No waiting, no begging, no knowing SQL.
+        </p>
+    </div>
 """, unsafe_allow_html=True)
-
-
 st.divider()
 
-# Quy trình 3 bước được làm lại cho nhất quán
+# The 3-step process, redesigned for consistency
 st.subheader("Your New Workflow (The Irvine-Free Method)")
 st.write("") 
 
@@ -170,7 +168,7 @@ with col3:
 
 st.divider()
 
-# Phần các báo cáo có sẵn
+# Available Reports Section
 st.subheader("What Can You Export?")
 
 with st.expander("📈 **Keyword Lab**", expanded=True):
@@ -188,9 +186,9 @@ with st.expander("💅 **Digital Shelf Analytics**", expanded=True):
 
 with st.expander("**Irvine's Promise**", expanded=True):
     st.write("""
-        There will be more type of export in the future. But Irvine is too lazy to do it.
+        More export types will be available in the future. But Irvine is too lazy to do it.
 
-        But Irvine will make it because he dont want to recive any export request. 
+        But Irvine will add them because he doesn't want to receive any more export requests.
     """)
     with st.expander("**Source?**", expanded=False):
         st.image("image.png")
@@ -198,5 +196,5 @@ with st.expander("**Irvine's Promise**", expanded=True):
 
 st.write("") 
 
-# Lời kêu gọi hành động cuối cùng
+# Final Call to Action
 st.success("You're in control now. 👉 Select a report from the menu on the left to get started.", icon="🎉")

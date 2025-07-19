@@ -3,10 +3,10 @@ import streamlit as st
 
 def initialize_session_state():
     """
-    Khởi tạo tất cả các biến cần thiết trong st.session_state 
-    nếu chúng chưa tồn tại.
+    Initialize all necessary variables in st.session_state 
+    if they don't already exist.
     """
-    # Các biến trạng thái hiện có
+    # Existing state variables
     if 'stage' not in st.session_state:
         st.session_state.stage = 'initial'
     if 'params' not in st.session_state:
@@ -18,6 +18,6 @@ def initialize_session_state():
     if 'download_info' not in st.session_state:
         st.session_state.download_info = {}
 
-    # --- BIẾN MỚI CHO THÔNG BÁO NGƯỜI DÙNG ---
+    # --- NEW VARIABLE FOR USER NOTIFICATIONS ---
     if 'user_message' not in st.session_state:
         st.session_state.user_message = None
