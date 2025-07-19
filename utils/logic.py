@@ -30,7 +30,9 @@ def get_data(query_type: str, data_source: str, limit: int = None, **kwargs):
     
     params_to_bind = kwargs.copy()
 
-    # Handle the IN clause for storefront_ids by formatting directly into the string
+    # SQLAlchemy's text() construct doesn't natively support expanding a list for an IN clause when used with pandas.read_sql.
+    # To work around this, we safely format the list of integer IDs directly into the SQL string.
+    # This is safe from SQL injection because we explicitly cast all IDs to integers first.
     if 'storefront_ids' in params_to_bind and isinstance(params_to_bind['storefront_ids'], (list, tuple)) and ':storefront_ids' in base_query_str:
         storefront_ids = params_to_bind['storefront_ids']
         
@@ -112,15 +114,9 @@ def handle_export_process(workspace_id, storefront_input, start_date, end_date, 
             st.error(error)
         st.stop()
     
-    def process_storefront_input(storefront_input):
-        try:
-            return [int(eid.strip()) for eid in storefront_input.split(',')]
-        except (ValueError, AttributeError):
-            return None
-    
     st.session_state.params = {
-        "workspace_id": int(workspace_id) if workspace_id else None,
-        "storefront_ids": process_storefront_input(storefront_input),
+        "workspace_id": workspace_id,
+        "storefront_ids": [s.strip() for s in storefront_input.split(',')] if storefront_input else None,
         "start_date": start_date.strftime('%Y-%m-%d') if start_date else None,
         "end_date": end_date.strftime('%Y-%m-%d') if end_date else None,
         "data_source": data_source,
@@ -183,6 +179,7 @@ def handle_get_data_button(workspace_id, storefront_input, start_date, end_date,
 
 
 def validate_inputs(workspace_id, storefront_input, start_date, end_date, required_inputs):
+    """Validates user inputs based on the requirements for the current page."""
     errors = []
     if 'workspace_id' in required_inputs and not workspace_id:
         errors.append("Workspace ID is required")
@@ -200,8 +197,6 @@ def validate_inputs(workspace_id, storefront_input, start_date, end_date, requir
         storefront_input_list = [s.strip() for s in storefront_input.split(",") if s.strip()]
         if 'storefront_ids' in required_inputs and not storefront_input_list:
             errors.append("Storefront EID is required")
-        elif len(storefront_input_list) > 5:
-            errors.append("You can only enter up to 5 storefront IDs.")
         elif not all(s.isdigit() for s in storefront_input_list):
             errors.append("Storefront EID must be numeric.")
         

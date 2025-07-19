@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: #e0e0e0; /* Add a default font color for better readability */
+}
+
+/* Hide the default Streamlit header and footer */
+.st-emotion-cache-18ni7ap, .st-emotion-cache-h4xjwg {
+    display: none;
+}
+
+/* Title with a sick gradient */
+.main-title {
+    font-size: 4.5rem;
+    font-weight: 900;
+    text-align: center;
+    background: -webkit-linear-gradient(45deg, #ff007f, #00ffcc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 0.2em 0;
+}
+
+/* Sub-header for the ~vibes~ */
+.sub-header {
+    text-align: center;
+    font-size: 1.25rem;
+    color: #a1a1aa; /* A softer gray */
+    font-weight: 400;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* NEW: The "Irvine Rant" box */
+.rant-box {
+    background-color: #1a1a1c;
+    border-left: 4px solid #ff007f;
+    padding: 1.5rem 2rem;
+    margin: 2rem auto;
+    border-radius: 8px;
+    max-width: 800px;
+}
+
+.rant-box p {
+    font-size: 1.05rem;
+    color: #e0e0e0;
+    line-height: 1.6;
+}
+
+.rant-box p strong {
+    color: #ffffff;
+}
+
+/* The 3-step process cards */
+.step-card {
+    background-color: #1c1c1e; /* Darker card */
+    border: 1px solid #333;
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    height: 100%;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(255, 0, 127, 0.2); /* Pink glow on hover */
+}
+
+.step-icon {
+    font-size: 4rem;
+    line-height: 1;
+}
+
+.step-card h3 {
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 1rem;
+}
+
+.step-card p {
+    color: #a1a1aa;
+    font-size: 0.95rem;
+}
+
+/* Styling for the expanders */
+.st-emotion-cache-p5msec {
+    background-color: #1c1c1e;
+    border-radius: 10px;
+    border: 1px solid #333;
+}
