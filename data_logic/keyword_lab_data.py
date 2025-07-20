@@ -1,4 +1,5 @@
 from pathlib import Path
+from utils.helpers import trace_function_call
 
 def _get_query_from_file(file_path: str) -> str:
     """Helper function to read SQL file safely."""
@@ -14,6 +15,7 @@ query_params = {
     "data": _get_query_from_file("kwl_data.sql"),
 }
 
+@trace_function_call
 def get_query(query_name: str) -> str:
     """Gets a query by name from the pre-loaded dictionary."""
     return query_params.get(query_name, "")

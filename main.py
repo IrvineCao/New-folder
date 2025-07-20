@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.state import initialize_session_state
+from utils.helpers import initialize_session_state
 
 initialize_session_state()
 
