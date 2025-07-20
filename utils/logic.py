@@ -6,22 +6,25 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy import text
 from utils.database import get_connection
 from utils.helpers import trace_function_call
-from data_logic import storefront_data, keyword_lab_data, keyword_performance_data, product_tracking_data, storefront_optimization_data
+import importlib
+from utils.input_config import DATA_SOURCE_CONFIGS
 from utils.input_validator import build_sql_params
 
 
 def get_query_by_source(data_source: str):
-    """Return the appropriate get_query function based on the data source."""
-    query_map = {
-        'storefront_in_workspace': storefront_data.get_query,
-        'keyword_lab': keyword_lab_data.get_query,
-        'keyword_performance': keyword_performance_data.get_query,
-        'product_tracking': product_tracking_data.get_query,
-        'storefront_optimization': storefront_optimization_data.get_query,
-    }
-    if data_source in query_map:
-        return query_map[data_source]
-    raise ValueError(f"Unknown data source: {data_source}")
+    """Dynamically import and return the get_query function based on the data source config."""
+    config = DATA_SOURCE_CONFIGS.get(data_source)
+    if not config or 'data_logic_module' not in config:
+        raise ValueError(f"Unknown or misconfigured data source: {data_source}")
+
+    module_name = config['data_logic_module']
+    try:
+        # Dynamically import the data logic module
+        data_logic_module = importlib.import_module(f"data_logic.{module_name}")
+        # Return the get_query function from the imported module
+        return getattr(data_logic_module, 'get_query')
+    except (ImportError, AttributeError) as e:
+        raise ImportError(f"Could not import or find 'get_query' in module 'data_logic.{module_name}': {e}")
 
 
 @st.cache_data(show_spinner=False, ttl=3600, persist=True)
