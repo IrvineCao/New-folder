@@ -97,7 +97,7 @@ In `data_logic/sql/`, create two new SQL files for your new data source (e.g., `
 **Step 2: Create Data Logic Module**
 
 In `data_logic/`, create a new Python file: `new_report_data.py`.
-This file should contain two functions that read the SQL files and execute them.
+This file should contain a dictionary that read the SQL files and execute them.
 
 ```python
 # data_logic/new_report_data.py
