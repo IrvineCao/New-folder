@@ -12,8 +12,8 @@ def _get_query_from_file(file_path: str) -> str:
         raise e
 
 query_params = {
-    "data": _get_query_from_file("storefront_optimization_data.sql"),
-    "count": _get_query_from_file("storefront_optimization_count.sql")
+    "data": _get_query_from_file("campaign_optimization_data.sql"),
+    "count": _get_query_from_file("campaign_optimization_count.sql")
 }
 
 def get_query(query_name: str) -> str:

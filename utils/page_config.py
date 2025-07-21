@@ -49,7 +49,8 @@ PAGES = {
         title="Marketing Automation",
         icon="🤖",
         tabs=[
-            TabPage(title="Storefront Optimization", data_source_key='storefront_optimization')
+            TabPage(title="Storefront Optimization", data_source_key='storefront_optimization'),
+            TabPage(title="Campaign Optimization", data_source_key='campaign_optimization')
         ]
     ),
 }

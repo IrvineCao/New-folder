@@ -138,6 +138,13 @@ DATA_SOURCE_CONFIGS = {
         "data_logic_module": "storefront_optimization_data",
         "inputs": ["workspace_id", "storefront_ids", "date_range"],
         "description": "Export storefront optimization data"
+    },
+
+    "campaign_optimization": {
+        "name": "Campaign Optimization",
+        "data_logic_module": "campaign_optimization_data",
+        "inputs": ["workspace_id", "storefront_ids", "date_range"],
+        "description": "Export campaign optimization data"
     }
 }
 

@@ -222,6 +222,10 @@ def create_action_buttons(data_source: str, input_values: Dict[str, Any], valida
         use_container_width=True,
         help="Click to start data export process" if not button_disabled else "Please fix validation errors first"
     ):
+        # Reset the trace for the new action
+        if 'call_trace' in st.session_state:
+            st.session_state.call_trace = []
+
         if not validation_errors:
             # Build SQL parameters
             sql_params = build_sql_params(data_source, input_values)
@@ -290,6 +294,8 @@ def _display_results():
     cols_action = st.columns(2)
     with cols_action[0]:
         if st.button("🚀 Export Full Data", use_container_width=True, type="primary"):
+            if 'call_trace' in st.session_state:
+                st.session_state.call_trace = []
             st.session_state.stage = 'exporting_full'
             st.rerun()
     with cols_action[1]:

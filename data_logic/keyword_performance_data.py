@@ -10,8 +10,8 @@ def _get_query_from_file(file_path: str) -> str:
         return "" 
 
 query_params = {
-    "count": _get_query_from_file("kw_pfm_count.sql"),
-    "data": _get_query_from_file("kw_pfm_data.sql"),
+    "count": _get_query_from_file("kw_performance_count.sql"),
+    "data": _get_query_from_file("kw_performance_data.sql"),
 }
 
 def get_query(query_name: str) -> str:

@@ -11,8 +11,8 @@ def _get_query_from_file(file_path: str) -> str:
         return "" 
 
 query_params = {
-    "count": _get_query_from_file("kwl_count.sql"),
-    "data": _get_query_from_file("kwl_data.sql"),
+    "count": _get_query_from_file("keyword_lab_count.sql"),
+    "data": _get_query_from_file("keyword_lab_data.sql"),
 }
 
 @trace_function_call
