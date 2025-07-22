@@ -129,8 +129,9 @@ DATA_SOURCE_CONFIGS = {
     
     "competition_landscape": {
         "name": "Competition Landscape",
-        "inputs": ["workspace_id", "storefront_ids", "date_range"],
-        "description": "Export competition landscape data (placeholder)"
+        "data_logic_module": "competition_landscape_data",
+        "inputs": ["workspace_id", "date_range", "device_type", "display_type", "product_position"],
+        "description": "Export competition landscape data with advanced filtering options"
     },
     
     "storefront_optimization": {

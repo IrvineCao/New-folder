@@ -42,7 +42,7 @@ PAGES = {
         tabs=[
             TabPage(title="Keyword Performance", data_source_key='keyword_performance'),
             TabPage(title="Product Tracking", data_source_key='product_tracking'),
-            TabPage(title="Competition Landscape", data_source_key='competition_landscape', is_placeholder=True)
+            TabPage(title="Competition Landscape", data_source_key='competition_landscape')
         ]
     ),
     "5_Marketing_Automation.py": Page(
