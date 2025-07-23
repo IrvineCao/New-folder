@@ -89,13 +89,15 @@ def load_data(data_source: str, limit: int = None):
 
         # Parameters are already built, just remove non-SQL keys
         params.pop('data_source', None)
+        params.pop('current_page', None)  # Remove page info but keep data_source in session
+        params.pop('num_row', None)  # Remove row count info
         sql_params = params
 
         df = get_data("data", data_source, limit=limit, **sql_params)
         st.session_state.df = df
         return df
-    except Exception:
-        st.error("An error occurred while loading data.")
+    except Exception as e:
+        st.error(f"An error occurred while loading data: {str(e)}")
         return None
 
 
@@ -109,13 +111,16 @@ def get_row_count(data_source: str, **kwargs) -> int:
 
         # Parameters are already built, just remove non-SQL keys
         params.pop('data_source', None)
+        params.pop('current_page', None)  # Remove page info but keep data_source in session
+        params.pop('num_row', None)  # Remove row count info
         sql_params = params
 
         # Get total row count
         num_row_df = get_data('count', data_source, **sql_params)
         num_row = num_row_df.iloc[0, 0] if not num_row_df.empty else 0
         return num_row
-    except Exception:
+    except Exception as e:
+        st.error(f"An error occurred while getting row count: {str(e)}")
         return None
 
 
@@ -125,7 +130,9 @@ def handle_export_process(data_source: str):
     # `st.session_state.params` is now set by the caller (`create_action_buttons`)
     params = st.session_state.get('params', {}).copy()
 
-    # Parameters are already built, just remove non-SQL keys
+    # Keep the data_source in params for tab state management
+    # but remove other non-SQL keys for the database query
+    current_page = params.pop('current_page', None)
     params.pop('data_source', None)
     sql_params = params
 
@@ -134,8 +141,19 @@ def handle_export_process(data_source: str):
             # Get total row count
             num_row = get_row_count(data_source, **sql_params)
             if num_row is None: # Handle case where get_row_count fails
+                st.session_state.user_message = {
+                    "type": "error",
+                    "text": "Failed to check data size. Please try again."
+                }
+                st.session_state.stage = 'initial'
                 return
+            
+            # Re-add the data_source to params so it's preserved for tab state
             st.session_state.params['num_row'] = num_row
+            # Keep data_source in params for tab state management
+            st.session_state.params['data_source'] = data_source
+            if current_page:
+                st.session_state.params['current_page'] = current_page
 
         # --- Handle user messages and warnings ---
         if num_row == 0:
@@ -144,23 +162,36 @@ def handle_export_process(data_source: str):
                 "text": "No data found for the selected criteria."
             }
             st.session_state.stage = 'initial'
-        elif num_row > 50000:
+            return
+            
+        elif int(num_row) > 50000:
             st.session_state.user_message = {
                 "type": "error",
-                "text": f"Data is too large to export ({num_row:,} rows). Please narrow your selection."
+                "text": f"Data is too large to export ({num_row:,} rows). Please narrow your selection to under 50,000 rows."
             }
-            st.session_state.stage = 'initial'
+            st.session_state.stage = 'blocked'  # Set to blocked state instead of initial
+            return
         else:
+            # Data size is acceptable, proceed with loading preview
             st.session_state.stage = 'loading_preview'
 
-    except OperationalError:
-        st.error("❌ Database Connection Error.")
+    except OperationalError as e:
+        st.session_state.user_message = {
+            "type": "error",
+            "text": "❌ Database Connection Error. Please try again later."
+        }
         st.session_state.stage = 'initial'
-    except ProgrammingError:
-        st.error("❌ An error occurred with the data query.")
+    except ProgrammingError as e:
+        st.session_state.user_message = {
+            "type": "error", 
+            "text": "❌ An error occurred with the data query. Please check your inputs."
+        }
         st.session_state.stage = 'initial'
-    except Exception:
-        st.error("❌ An unexpected error occurred.")
+    except Exception as e:
+        st.session_state.user_message = {
+            "type": "error",
+            "text": f"❌ An unexpected error occurred: {str(e)}"
+        }
         st.session_state.stage = 'initial'
 
 

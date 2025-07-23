@@ -46,11 +46,7 @@ WITH main_query AS (
             WHERE
                 true
                 AND product_a.timing = 'daily'
-                AND (
-                    (
-                        created_datetime BETWEEN :start_date AND :end_date
-                    )
-                )
+                AND created_datetime BETWEEN :start_date AND :end_date
             GROUP BY
                 NULL,
                 product_a.keyword_id,
@@ -63,7 +59,7 @@ WITH main_query AS (
     WHERE
         (true)
         AND (
-            (:storefront_ids is NULL or storefront.ads_ops_storefront_id IN :storefront_ids)
+            storefront.ads_ops_storefront_id IN :storefront_ids
             and workspace.id = :workspace_id
         )
     GROUP BY

@@ -19,7 +19,7 @@ def initialize_session_state():
     if 'download_info' not in st.session_state:
         st.session_state.download_info = {}
 
-    # --- NEW VARIABLE FOR USER NOTIFICATIONS ---
+    # --- USER NOTIFICATIONS ---
     if 'user_message' not in st.session_state:
         st.session_state.user_message = None
 

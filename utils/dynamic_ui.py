@@ -230,9 +230,13 @@ def create_action_buttons(data_source: str, input_values: Dict[str, Any], valida
             # Build SQL parameters
             sql_params = build_sql_params(data_source, input_values)
             
+            # Store current page and data source info for tab state management
+            current_page = st.session_state.get('current_page')
+            
             # Store in session state for processing
             st.session_state.params = {
                 "data_source": data_source,
+                "current_page": current_page,  # Save page info for tab state
                 **sql_params
             }
             
@@ -293,11 +297,22 @@ def _display_results():
     st.markdown("---")
     cols_action = st.columns(2)
     with cols_action[0]:
-        if st.button("🚀 Export Full Data", use_container_width=True, type="primary"):
+        # Check if export is allowed (under 50k rows)
+        total_rows = st.session_state.get('params', {}).get('num_row', 0)
+        export_disabled = bool(total_rows > 50000)
+        
+        if st.button(
+            "🚀 Export Full Data", 
+            use_container_width=True, 
+            type="primary",
+            disabled=export_disabled,
+            help="Export the full dataset" if not export_disabled else f"Export disabled: Too many rows ({total_rows:,}). Maximum allowed: 50,000 rows."
+        ):
             if 'call_trace' in st.session_state:
                 st.session_state.call_trace = []
             st.session_state.stage = 'exporting_full'
             st.rerun()
+            
     with cols_action[1]:
         if st.button("🔄 Start New Export", use_container_width=True):
             st.session_state.stage = 'initial'
@@ -310,6 +325,14 @@ def _display_results():
 
 def _handle_exporting_full():
     """Stage 3: Load the full dataset and prepare it for download."""
+    # Double-check row limit before proceeding
+    total_rows = st.session_state.get('params', {}).get('num_row', 0)
+    if int(total_rows) > 50000:
+        st.error(f"❌ Export blocked: Dataset too large ({total_rows:,} rows). Maximum allowed: 50,000 rows.")
+        st.session_state.stage = 'blocked'
+        st.rerun()
+        return
+    
     with st.spinner("Exporting full data, this may take a while..."):
         full_df = load_data(st.session_state.params.get('data_source'))
         if full_df is not None:
@@ -335,6 +358,27 @@ def _display_download_ready():
         st.session_state.stage = 'initial'
         st.rerun()
 
+def _display_blocked_state():
+    """Stage: Display blocked state when data is too large."""
+    params = st.session_state.get('params', {})
+    total_rows = int(params.get('num_row', 0))
+    
+    st.error(f"🚫 Export blocked: Dataset contains {total_rows:,} rows")
+    st.warning("**Maximum allowed: 50,000 rows**")
+    
+    st.markdown("### 💡 Suggestions to reduce data size:")
+    st.markdown("""
+    - **Reduce date range**: Select a shorter time period
+    - **Reduce storefronts**: Select fewer storefront EIDs  
+    - **Add more filters**: Use optional filters to narrow down results
+    """)
+    
+    if st.button("🔄 Modify Selection", use_container_width=True, type="primary"):
+        st.session_state.stage = 'initial'
+        st.session_state.df_preview = None
+        st.session_state.params = {}
+        st.rerun()
+
 
 # --- Main Display Function --- 
 def display_data_exporter():
@@ -344,6 +388,7 @@ def display_data_exporter():
         'loaded': _display_results,
         'exporting_full': _handle_exporting_full,
         'download_ready': _display_download_ready,
+        'blocked': _display_blocked_state,  # New blocked state
     }
     
     current_stage = st.session_state.get('stage', 'initial')

@@ -12,7 +12,6 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
-    /* --- CÁC PHONG CÁCH CHUNG TỪ TRANG CHỦ --- */
     body {
         font-family: 'Inter', sans-serif;
         color: #e0e0e0;
@@ -46,7 +45,6 @@ st.markdown("""
         line-height: 1.6;
     }
     
-    /* --- PHONG CÁCH MỚI DÀNH RIÊNG CHO TRANG TRỢ GIÚP --- */
     
     /* Làm cho các tiêu đề phụ (h2, h3) nổi bật hơn */
     h2, h3 {

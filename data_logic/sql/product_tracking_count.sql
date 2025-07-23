@@ -22,11 +22,7 @@ WITH main_query AS (
             INNER JOIN metric_share_of_search_product AS product_a ON (product_a.keyword_id = keyword.id)
             WHERE true
                 AND product_a.timing = 'daily'
-                AND (
-                    (
-                        created_datetime BETWEEN :start_date AND :end_date
-                    )
-                )
+                AND created_datetime BETWEEN :start_date AND :end_date
             GROUP BY
                 product_a.keyword_id,
                 product_a.product_id,
@@ -38,7 +34,7 @@ WITH main_query AS (
         AND product_a.timing = 'daily'
     WHERE true
         AND (
-            (:storefront_ids is NULL or storefront.ads_ops_storefront_id IN :storefront_ids)
+            storefront.ads_ops_storefront_id IN :storefront_ids
             and workspace.id = :workspace_id
         )
     GROUP BY
